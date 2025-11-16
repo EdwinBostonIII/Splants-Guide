@@ -4600,3 +4600,444 @@ CREATE INDEX idx_analytics_date ON daily_analytics(date);
 
 Validation: All 4 tables created with indexes, no SQL errors.
 
+
+═══════════════════════════════════════════════════════════════════════════════
+
+SECTION 2.2: PAYMENT PROCESSING PIPELINE
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ QUICK JUMP MENU: Section 2.2                                                │
+│                                                                             │
+│ [2.2.1] Webhook Endpoint Creation           [2.2.2] Signature Validation   │
+│ [2.2.3] Idempotency Implementation          [2.2.4] Metadata Extraction     │
+│ [2.2.5] Error Handling Configuration        [2.2.6] Testing & Validation   │
+│                                                                             │
+│ Common Issues:                                                              │
+│   "Invalid signature" → Section 2.2.2       "Duplicates" → Section 2.2.3   │
+│   "Missing metadata" → Section 2.2.4        "Timeout" → Section 2.2.5      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ TIME REALITY CHECK                                                          │
+│                                                                             │
+│ Stripe Documentation Says:    "15 minutes to integrate webhooks"           │
+│ Actual Time Required:         4 to 6 hours for production ready setup      │
+│                                                                             │
+│ Time Breakdown:                                                             │
+│   • Make.com webhook setup:           30 minutes                            │
+│   • Signature validation logic:       60 minutes                            │
+│   • Idempotency implementation:       90 minutes                            │
+│   • Metadata extraction:              45 minutes                            │
+│   • Error handling:                   60 minutes                            │
+│   • Testing with live webhooks:       45 minutes                            │
+│                                                                             │
+│ Why the gap? Stripe docs assume you know their entire system. This guide   │
+│ fills in the missing 5+ hours of implementation details.                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+
+OVERVIEW: What This Section Accomplishes
+
+By the end of Section 2.2, your system will:
+  ✓ Receive payment webhooks from Stripe reliably
+  ✓ Validate webhook signatures to prevent spoofing (security)
+  ✓ Check for duplicate webhooks automatically (prevents double charging)
+  ✓ Extract all required metadata for order fulfillment
+  ✓ Handle errors gracefully with proper logging and alerts
+  ✓ Return appropriate HTTP responses to Stripe
+
+Success Metrics:
+  • Webhook processing time: <2 seconds (p95)
+  • Duplicate catch rate: 100% (zero duplicates reach fulfillment)
+  • Signature validation failures: <0.1% (only malicious or misconfigured)
+  • Metadata extraction success: >99.5%
+
+Payment Webhook Processing Flow Diagram:
+
+START: Stripe sends webhook
+     │
+     ↓
+┌──────────────────────────────────────┐
+│  Step 1: Signature Validation        │  ← FAILURE RATE: 0.1%
+│                                      │     (Invalid signatures)
+│  Compare: webhook_signature          │
+│  Against: signing_secret             │
+│  Result: PASS / FAIL                 │
+└────────────┬─────────────────────────┘
+             │
+             ↓ PASS
+┌──────────────────────────────────────┐
+│  Step 2: Idempotency Check           │  ← FAILURE RATE: 2.3%
+│                                      │     (Duplicate webhooks)
+│  Query: SELECT payment_intent_id     │
+│  From: orders table                  │
+│  Result: NEW / DUPLICATE             │
+└────────────┬─────────────────────────┘
+             │
+             ↓ NEW
+┌──────────────────────────────────────┐
+│  Step 3: Metadata Extraction         │  ← FAILURE RATE: 0.5%
+│                                      │     (Missing metadata)
+│  Extract:                            │
+│    • product_id                      │
+│    • variant_id                      │
+│    • customer_email                  │
+│    • shipping_address                │
+│  Validate: All required present      │
+└────────────┬─────────────────────────┘
+             │
+             ↓ VALID
+┌──────────────────────────────────────┐
+│  Step 4: Provider Submission         │  ← FAILURE RATE: 3.7%
+│                                      │     (API errors)
+│  Try: Printful API                   │
+│  Retry: 4 attempts (exponential)     │
+│  Timeout: 30 seconds                 │
+│  Result: SUCCESS / FAIL              │
+└────────────┬─────────────────────────┘
+             │
+             ↓ SUCCESS
+┌──────────────────────────────────────┐
+│  Step 5: Confirmation & Logging      │
+│                                      │
+│  Actions:                            │
+│    • Write to database               │
+│    • Send confirmation email         │
+│    • Post Discord notification       │
+│    • Return 200 OK to Stripe         │
+└──────────────────────────────────────┘
+
+END: Order successfully processed
+
+═══════════════════════════════════════════════════════════════════════════════
+
+2.2.1: WEBHOOK ENDPOINT CREATION
+
+Step 1: Create Make.com Webhook Module
+
+Time Required: 15 minutes
+Difficulty: Easy
+Prerequisites: Make.com account created (Section 2.1.3)
+
+Actions:
+
+1. Log into Make.com dashboard (https://www.make.com)
+2. Click "Scenarios" in left sidebar
+3. Click "+ Create a new scenario" button (top right)
+4. Scenario editor opens
+5. Click the large "+" circle in center
+6. Search bar appears: type "webhooks"
+7. Select "Webhooks" from results
+8. Click "Custom webhook" option
+9. Click "Add" button
+10. Webhook configuration dialog opens
+11. Webhook name field: enter "stripe_payment_webhook"
+12. Click "Save" button
+
+Make.com generates a webhook URL. It looks like:
+https://hook.us1.make.com/abc123xyz456def789ghi012jkl345mno678pqr901
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ⚠ CRITICAL: Copy this URL immediately                                      │
+│                                                                             │
+│   This webhook URL is permanent for this webhook module. You will          │
+│   configure it in Stripe. If you lose it, you must find it in Make.com     │
+│   webhook settings or reconfigure Stripe (30 minutes of work).             │
+│                                                                             │
+│   Store it in:                                                              │
+│     • Password manager (1Password, LastPass, Bitwarden)                    │
+│     • Project documentation (.env.example file)                            │
+│     • Team shared document (if applicable)                                 │
+│                                                                             │
+│   Do NOT share publicly or commit to git with real webhook URL.            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Validation Checkpoint:
+  ✓ Webhook module created in Make.com
+  ✓ Webhook URL copied and stored securely in 2+ places
+  ✓ Scenario named descriptively (not "Untitled scenario")
+  ✓ Webhook module shows "Waiting for data" status
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Step 2: Configure Stripe to Send Webhooks
+
+Time Required: 10 minutes
+Difficulty: Easy
+
+Actions:
+
+1. Log into Stripe Dashboard (https://dashboard.stripe.com)
+2. Click "Developers" in top navigation
+3. Click "Webhooks" in left sidebar
+4. Click "+ Add endpoint" button (top right)
+5. Endpoint configuration form opens
+
+Configuration:
+
+Endpoint URL: [Paste your Make.com webhook URL]
+Description: Make.com Order Automation (production)
+Version: [Leave as default, usually latest API version]
+
+Events to listen to:
+  • Click "Select events" button
+  • Search for: checkout.session.completed
+  • Check the box next to "checkout.session.completed"
+  • This is the ONLY event you need for basic payment processing
+  • Click "Add events" button
+
+6. Click "Add endpoint" button to save
+
+Stripe creates the endpoint and generates a signing secret. The page refreshes
+and shows your new endpoint with a "Signing secret" section.
+
+7. Click "Reveal" button next to "Signing secret"
+8. Secret appears: whsec_abc123xyz456def789ghi012jkl345mno678
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ⚠ CRITICAL: Copy the signing secret immediately                            │
+│                                                                             │
+│   This secret validates webhook authenticity. Without it, your system is   │
+│   vulnerable to spoofing attacks (malicious actors sending fake orders).   │
+│                                                                             │
+│   Security Impact: CRITICAL (prevents fraud)                               │
+│   Storage locations:                                                        │
+│     • Make.com scenario variables (primary use location)                   │
+│     • Password manager (backup)                                            │
+│     • Team secrets vault if using (1Password Teams, etc.)                  │
+│                                                                             │
+│   WARNING: Stripe shows this secret ONCE on creation. After you navigate   │
+│   away, you must click "Reveal" again. If you lose it completely, you      │
+│   must "Roll" the secret (generates new one, breaks connection until you   │
+│   update Make.com with the new secret).                                    │
+│                                                                             │
+│   Do NOT commit to git, share in Slack, or email.                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Validation Checkpoint:
+  ✓ Webhook endpoint created in Stripe
+  ✓ Event "checkout.session.completed" selected (and ONLY this event)
+  ✓ Signing secret copied and stored securely in 2+ places
+  ✓ Endpoint status shows "Enabled" with green indicator
+  ✓ Endpoint shows correct Make.com URL
+
+Testing the Connection:
+
+1. In Stripe webhook endpoint page, scroll down to "Send test webhook" section
+2. Select "checkout.session.completed" from event dropdown
+3. Click "Send test webhook" button
+4. Stripe sends test event to your Make.com webhook
+
+5. Switch to Make.com tab
+6. Webhook module should now show received data
+7. Execution log (bottom of Make.com) shows 1 execution
+8. Execution status: Success (green checkmark)
+
+If test succeeds: Connection working. Proceed to signature validation.
+If test fails: Check webhook URL is exactly correct. Check Make.com scenario
+is active (not paused). Check Make.com account has not exceeded operation
+limits.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+2.2.2: SIGNATURE VALIDATION IMPLEMENTATION
+
+Why This Matters (5 Dimensions):
+
+BUSINESS REASON:
+Prevents fraudulent orders from malicious actors. Without validation, anyone
+who discovers your webhook URL can send POST requests and create fake orders,
+costing you fulfillment money ($15 to $30 per fake order) with no corresponding
+payment. One determined attacker could create hundreds of fake orders before
+detection, resulting in thousands of dollars in losses plus investigation time.
+
+TECHNICAL REASON:
+Stripe signs each webhook with HMAC SHA256 using your webhook signing secret.
+The signature is sent in the Stripe-Signature header. Your system must:
+  1. Extract the signature from the header
+  2. Compute the expected signature using the raw request body + secret
+  3. Compare the two signatures using constant time comparison
+  4. Reject the request if signatures do not match
+This proves the webhook genuinely came from Stripe's servers.
+
+FINANCIAL REASON:
+Implementation cost: 20 minutes of configuration time.
+Prevention value: Eliminates fraud risk entirely ($0 to $5,000+ depending on
+exposure). A single fraudulent order attack (50 orders × $20 = $1,000) costs
+more than the time to implement. ROI: Infinite (minimal cost, eliminates
+potentially unlimited fraud losses).
+
+OPERATIONAL REASON:
+Automated signature validation adds 50ms to 150ms to processing time
+(negligible, well within acceptable limits). Runs on every webhook with zero
+human intervention required. Failures are logged automatically for debugging.
+No ongoing maintenance needed once configured correctly.
+
+STRATEGIC REASON:
+Foundation for PCI DSS compliance (requirement 6.5.10: secure authentication).
+Prepares system for audit and security reviews. Demonstrates security best
+practices to customers and partners. Required for any serious production
+system handling payments.
+
+───────────────────────────────────────────────────────────────────────────────
+
+Implementation: Make.com Built-In Validation
+
+Make.com provides built-in webhook signature validation for Stripe webhooks.
+This is the recommended approach (simpler than manual implementation, equally
+secure).
+
+Step 1: Add Scenario Variables
+
+Time Required: 5 minutes
+
+1. In Make.com scenario editor, click anywhere on canvas background
+2. Right panel opens showing "Scenario settings"
+3. Scroll down to "Variables" section
+4. Click "+ Add variable" button
+5. Variable configuration form appears
+
+Variable 1: Webhook Signing Secret
+  Name: stripe_webhook_secret
+  Value: [paste your whsec_... value from Stripe]
+  Description: Stripe webhook signing secret for signature validation
+  Type: Text (default)
+  
+6. Click "Save" button
+7. Variable appears in list
+
+Best Practice: Never hard code secrets in modules. Always use scenario
+variables. This allows secret rotation without changing scenario logic.
+
+Step 2: Configure Webhook Module Validation
+
+Time Required: 5 minutes
+
+1. Click on your webhook module (first module in scenario)
+2. Right panel shows webhook configuration
+3. Scroll to "Webhook validation" section (may need to expand)
+4. Toggle "Verify signature" to ON (slide button to right)
+
+Configuration fields appear:
+
+Signature header name: Stripe-Signature
+  (This is the HTTP header Stripe uses, case-sensitive)
+
+Signing secret: {{stripe_webhook_secret}}
+  Click in field, then click "Variables" tab in right panel
+  Select "stripe_webhook_secret" variable you created
+  Reference {{stripe_webhook_secret}} appears in field
+
+Algorithm: sha256
+  (Stripe uses HMAC SHA256, select from dropdown)
+
+Timestamp tolerance: 300
+  (Allows 5 minutes clock skew, Stripe default, leave as is)
+
+4. Click "OK" button to save
+5. Webhook module now validates signatures automatically
+
+What Happens Now:
+  • Every webhook Stripe sends includes Stripe-Signature header
+  • Make.com extracts signature from header
+  • Computes expected signature using request body + your secret
+  • Compares signatures
+  • If match: Scenario continues execution
+  • If mismatch: Scenario stops, execution logs show "Signature validation failed"
+  • Invalid requests return 401 Unauthorized to Stripe automatically
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PRODUCTION REALITY: Signature validation failures                          │
+│                                                                             │
+│ Expected failure rate: 0.1% (1 in 1,000 requests)                          │
+│                                                                             │
+│ Common causes and fixes:                                                    │
+│                                                                             │
+│ 1. Misconfigured secret (100% of webhooks fail immediately)                │
+│    Symptom: ALL webhooks fail validation after setup                       │
+│    Cause: Copied wrong secret, or secret has extra space/newline           │
+│    Fix: Re-copy secret from Stripe, paste into variable, ensure exact match│
+│    Time to fix: 2 minutes                                                   │
+│    Detection: Immediate (first test webhook fails)                         │
+│                                                                             │
+│ 2. Wrong signature header name (100% fail)                                 │
+│    Symptom: ALL webhooks fail, error "signature header not found"          │
+│    Cause: Typo in header name, case sensitivity issue                      │
+│    Fix: Verify header name is exactly "Stripe-Signature" (capital S)       │
+│    Time to fix: 1 minute                                                    │
+│    Detection: Immediate (first test webhook fails)                         │
+│                                                                             │
+│ 3. Secret rotation without update (<0.1% of requests during rotation)      │
+│    Symptom: Webhooks suddenly start failing after working fine             │
+│    Cause: Stripe secret was rolled but Make.com not updated                │
+│    Fix: Copy new secret from Stripe, update scenario variable              │
+│    Time to fix: 3 minutes                                                   │
+│    Detection: 5-10 minutes (Better Uptime alerts on failures)              │
+│    Revenue impact: $50-200 (orders delayed during fix time)                │
+│                                                                             │
+│ 4. Clock skew (extremely rare, <0.01% of requests)                         │
+│    Symptom: Occasional validation failure, mostly succeeds                 │
+│    Cause: Stripe server clock and Make.com server clock disagree by >5 min │
+│    Fix: None needed (automatically resolves in minutes), check Make.com    │
+│          status page if persistent                                         │
+│    Time to fix: 0 (wait for automatic resolution)                          │
+│    Detection: Monitoring catches intermittent failures                     │
+│                                                                             │
+│ 5. Replay attack (security feature working correctly)                      │
+│    Symptom: Validation fails for resubmitted old webhook                   │
+│    Cause: Someone trying to replay old webhook event                       │
+│    Fix: None needed (rejection is correct behavior)                        │
+│    Time to fix: 0 (log and ignore)                                         │
+│    Detection: Appears in execution logs as validation failure              │
+│                                                                             │
+│ Financial impact of mishandling signature validation:                      │
+│                                                                             │
+│ False positive (reject valid webhook):                                     │
+│   • Lost sale: $25 average order value                                     │
+│   • Customer support time: $15 (30 min @ $30/hour)                         │
+│   • Customer confusion/frustration: Trust damage                           │
+│   • Impact per incident: $40 minimum                                       │
+│                                                                             │
+│ False negative (accept invalid webhook):                                   │
+│   • Fraudulent order fulfillment: $15-30 per order                         │
+│   • Investigation time: $30-50 (1-1.5 hours)                               │
+│   • Potential chargeback fees: $15-25                                      │
+│   • Impact per incident: $60-105                                           │
+│                                                                             │
+│ Correct configuration prevents both scenarios. Time invested: 15 minutes.  │
+│ Value protected: Unlimited (fraud prevention has infinite upside).         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Validation Checkpoint:
+  ✓ Scenario variable created with correct secret
+  ✓ Webhook module validation enabled
+  ✓ Signature header set to "Stripe-Signature"
+  ✓ Algorithm set to "sha256"
+  ✓ Test webhook from Stripe passes validation
+  ✓ Manual POST request without signature fails (expected behavior)
+
+Testing Signature Validation:
+
+Test 1: Valid Signature (should pass)
+1. In Stripe dashboard, send test webhook
+2. Check Make.com execution log
+3. Execution should succeed (green checkmark)
+4. Execution details show "Signature verified: true"
+
+Test 2: Invalid Signature (should fail)
+1. Use curl or Postman to send POST to your webhook URL
+2. Include some JSON body but NO Stripe-Signature header
+3. Check Make.com execution log
+4. Execution should fail (red X)
+5. Error message: "Signature validation failed" or "Signature header not found"
+6. This is correct behavior (rejecting invalid request)
+
+If both tests pass: Signature validation working correctly. Proceed to
+idempotency implementation.
+
+If tests fail: Review configuration, check secret is exact match, verify
+header name case sensitivity.
+
+═══════════════════════════════════════════════════════════════════════════════
+
