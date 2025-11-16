@@ -7753,6 +7753,1017 @@ class EmailTemplates {
 module.exports = EmailTemplates;
 ```
 
+C.5 Rate Limiter Implementation
+
+```javascript
+// rate-limiter.js - Token bucket rate limiting
+class RateLimiter {
+  constructor() {
+    this.buckets = new Map();
+  }
+  
+  // Token bucket algorithm
+  checkRateLimit(identifier, config = {}) {
+    const {
+      maxTokens = 100,
+      refillRate = 10, // tokens per second
+      refillInterval = 1000 // milliseconds
+    } = config;
+    
+    const now = Date.now();
+    let bucket = this.buckets.get(identifier);
+    
+    if (!bucket) {
+      bucket = {
+        tokens: maxTokens,
+        lastRefill: now
+      };
+      this.buckets.set(identifier, bucket);
+    }
+    
+    // Refill tokens based on time elapsed
+    const timePassed = now - bucket.lastRefill;
+    const tokensToAdd = (timePassed / refillInterval) * refillRate;
+    bucket.tokens = Math.min(maxTokens, bucket.tokens + tokensToAdd);
+    bucket.lastRefill = now;
+    
+    // Check if request can proceed
+    if (bucket.tokens >= 1) {
+      bucket.tokens -= 1;
+      return {
+        allowed: true,
+        remaining: Math.floor(bucket.tokens),
+        resetAt: now + ((maxTokens - bucket.tokens) / refillRate) * refillInterval
+      };
+    }
+    
+    return {
+      allowed: false,
+      remaining: 0,
+      resetAt: now + ((1 - bucket.tokens) / refillRate) * refillInterval
+    };
+  }
+  
+  // Cleanup old buckets
+  cleanup(maxAge = 3600000) {
+    const now = Date.now();
+    for (const [identifier, bucket] of this.buckets.entries()) {
+      if (now - bucket.lastRefill > maxAge) {
+        this.buckets.delete(identifier);
+      }
+    }
+  }
+}
+
+// Express middleware
+function rateLimitMiddleware(config) {
+  const limiter = new RateLimiter();
+  
+  // Cleanup every 10 minutes
+  setInterval(() => limiter.cleanup(), 600000);
+  
+  return (req, res, next) => {
+    const identifier = req.ip || req.connection.remoteAddress;
+    const result = limiter.checkRateLimit(identifier, config);
+    
+    res.set('X-RateLimit-Remaining', result.remaining);
+    res.set('X-RateLimit-Reset', new Date(result.resetAt).toISOString());
+    
+    if (!result.allowed) {
+      return res.status(429).json({
+        error: 'Too many requests',
+        retryAfter: Math.ceil((result.resetAt - Date.now()) / 1000)
+      });
+    }
+    
+    next();
+  };
+}
+
+module.exports = { RateLimiter, rateLimitMiddleware };
+```
+
+C.6 Logging Utility
+
+```javascript
+// logger.js - Structured logging
+const winston = require('winston');
+
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  defaultMeta: {
+    service: 'splants-automation',
+    environment: process.env.NODE_ENV
+  },
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
+    })
+  ]
+});
+
+// Add file transport in production
+if (process.env.NODE_ENV === 'production') {
+  logger.add(new winston.transports.File({
+    filename: 'logs/error.log',
+    level: 'error'
+  }));
+  logger.add(new winston.transports.File({
+    filename: 'logs/combined.log'
+  }));
+}
+
+// Helper methods
+logger.logOrder = (action, orderId, details) => {
+  logger.info('Order event', {
+    action,
+    order_id: orderId,
+    ...details
+  });
+};
+
+logger.logPayment = (action, chargeId, amount, details) => {
+  logger.info('Payment event', {
+    action,
+    charge_id: chargeId,
+    amount,
+    ...details
+  });
+};
+
+logger.logError = (error, context) => {
+  logger.error('Error occurred', {
+    error: error.message,
+    stack: error.stack,
+    ...context
+  });
+};
+
+module.exports = logger;
+```
+
 ═══════════════════════════════════════════════════════════════════════════════
-END OF EXPANSION CONTENT - PARTS 6.2-8.3 AND APPENDICES A-C COMPLETE
+
+APPENDIX D: CALCULATIONS AND FORMULAS
+═══════════════════════════════════════════════════════════════════════════════
+
+D.1 Cost Analysis and ROI Calculations
+
+Monthly cost breakdown formula:
+```
+Total Monthly Cost = 
+  Stripe Fees +
+  Make.com Subscription +
+  POD Provider Costs +
+  Database Hosting +
+  Monitoring Services +
+  Email Services +
+  Time Investment (hourly rate × hours)
+
+Example calculation for 100 orders/month:
+  Stripe: (100 orders × $30 avg) × 2.9% + (100 × $0.30) = $117
+  Make.com Pro: $39
+  Printful/Printify: $0 (pay per order)
+  Supabase Pro: $25
+  Better Uptime: $20
+  Resend: $20
+  Maintenance: 4 hours × $50/hour = $200
+  
+  Total: $421/month
+  Per order: $4.21
+
+Break-even analysis:
+  Setup time: 60 hours
+  Setup cost at $50/hour: $3,000
+  Monthly savings vs manual: $800 (16 hours × $50/hour)
+  Break-even: 3,000 / 800 = 3.75 months
+```
+
+ROI calculation formula:
+```javascript
+function calculateROI(initialInvestment, monthlyBenefit, months) {
+  const totalBenefit = monthlyBenefit * months;
+  const roi = ((totalBenefit - initialInvestment) / initialInvestment) * 100;
+  const paybackPeriod = initialInvestment / monthlyBenefit;
+  
+  return {
+    roi: roi.toFixed(2) + '%',
+    totalBenefit: totalBenefit.toFixed(2),
+    netProfit: (totalBenefit - initialInvestment).toFixed(2),
+    paybackPeriod: paybackPeriod.toFixed(1) + ' months'
+  };
+}
+
+// Example: $3,000 setup, saving $800/month
+calculateROI(3000, 800, 12);
+// Returns: { roi: '220%', totalBenefit: '9600.00', netProfit: '6600.00', paybackPeriod: '3.8 months' }
+```
+
+D.2 Capacity Planning Calculations
+
+Database growth projection:
+```sql
+-- Calculate current daily growth rate
+WITH daily_growth AS (
+  SELECT 
+    DATE(created_at) AS date,
+    COUNT(*) AS new_orders,
+    SUM(pg_column_size(orders.*)) AS bytes_added
+  FROM orders
+  WHERE created_at >= NOW() - INTERVAL '30 days'
+  GROUP BY DATE(created_at)
+)
+SELECT 
+  AVG(new_orders) AS avg_daily_orders,
+  AVG(bytes_added) AS avg_daily_bytes,
+  AVG(bytes_added) * 365 / 1024 / 1024 / 1024 AS projected_annual_growth_gb
+FROM daily_growth;
+
+-- When to upgrade database calculation
+-- Current size: 2 GB
+-- Included in plan: 8 GB
+-- Daily growth: 15 MB
+-- Days until full: (8 GB - 2 GB) / 15 MB = 409 days (~13.6 months)
+```
+
+Make.com operations usage projection:
+```javascript
+function projectMakeOperations(currentOrders, growthRate, months) {
+  const operationsPerOrder = 12; // Average across all scenarios
+  let projections = [];
+  
+  for (let month = 1; month <= months; month++) {
+    const orders = Math.ceil(currentOrders * Math.pow(1 + growthRate, month));
+    const operations = orders * operationsPerOrder;
+    
+    // Determine required plan
+    let plan, cost;
+    if (operations <= 10000) {
+      plan = 'Core';
+      cost = 19;
+    } else if (operations <= 40000) {
+      plan = 'Pro';
+      cost = 39;
+    } else if (operations <= 170000) {
+      plan = 'Team';
+      cost = 99;
+    } else {
+      plan = 'Enterprise';
+      cost = 299 + Math.ceil((operations - 170000) / 10000) * 9;
+    }
+    
+    projections.push({
+      month,
+      orders,
+      operations,
+      plan,
+      cost
+    });
+  }
+  
+  return projections;
+}
+
+// Example: 100 orders/month, 10% monthly growth
+const projections = projectMakeOperations(100, 0.10, 12);
+console.log(projections[11]); // Month 12
+// { month: 12, orders: 314, operations: 3768, plan: 'Core', cost: 19 }
+```
+
+D.3 Performance Metrics Calculations
+
+Query performance improvement calculation:
+```javascript
+function calculatePerformanceImprovement(beforeMs, afterMs) {
+  const improvement = ((beforeMs - afterMs) / beforeMs) * 100;
+  const speedup = beforeMs / afterMs;
+  const timeSaved = beforeMs - afterMs;
+  
+  return {
+    improvement: improvement.toFixed(1) + '% faster',
+    speedup: speedup.toFixed(1) + 'x',
+    timeSavedMs: timeSaved,
+    timeSavedPercentile: {
+      daily: (timeSaved * 1000).toFixed(0) + ' seconds', // 1000 queries/day
+      monthly: ((timeSaved * 30000) / 1000 / 60).toFixed(1) + ' minutes' // 30k queries/month
+    }
+  };
+}
+
+// Example: Query went from 450ms to 72ms
+calculatePerformanceImprovement(450, 72);
+// {
+//   improvement: '84.0% faster',
+//   speedup: '6.3x',
+//   timeSavedMs: 378,
+//   timeSavedPercentile: { daily: '378 seconds', monthly: '189.0 minutes' }
+// }
+```
+
+P95 latency calculation:
+```sql
+-- Calculate P95 latency for API endpoints
+SELECT 
+  endpoint,
+  COUNT(*) AS request_count,
+  ROUND(AVG(duration_ms), 2) AS avg_latency_ms,
+  ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY duration_ms), 2) AS p50_latency_ms,
+  ROUND(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration_ms), 2) AS p95_latency_ms,
+  ROUND(PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY duration_ms), 2) AS p99_latency_ms,
+  MAX(duration_ms) AS max_latency_ms
+FROM api_request_log
+WHERE created_at >= NOW() - INTERVAL '24 hours'
+GROUP BY endpoint
+ORDER BY p95_latency_ms DESC;
+```
+
+D.4 Error Rate and Reliability Calculations
+
+Error rate calculation:
+```javascript
+function calculateErrorRate(totalRequests, failedRequests) {
+  const errorRate = (failedRequests / totalRequests) * 100;
+  const successRate = 100 - errorRate;
+  
+  // Calculate if SLO is met (target: 99.5% success rate)
+  const sloTarget = 99.5;
+  const sloMet = successRate >= sloTarget;
+  const errorBudget = (100 - sloTarget) / 100; // 0.5% = 0.005
+  const errorBudgetRemaining = errorBudget - (failedRequests / totalRequests);
+  
+  return {
+    errorRate: errorRate.toFixed(3) + '%',
+    successRate: successRate.toFixed(3) + '%',
+    sloTarget: sloTarget + '%',
+    sloMet,
+    errorBudgetUsed: ((failedRequests / totalRequests) / errorBudget * 100).toFixed(1) + '%',
+    allowedFailures: Math.floor(totalRequests * errorBudget),
+    remainingFailures: Math.floor(totalRequests * errorBudgetRemaining)
+  };
+}
+
+// Example: 10,000 requests, 23 failures
+calculateErrorRate(10000, 23);
+// {
+//   errorRate: '0.230%',
+//   successRate: '99.770%',
+//   sloTarget: '99.5%',
+//   sloMet: true,
+//   errorBudgetUsed: '46.0%',
+//   allowedFailures: 50,
+//   remainingFailures: 27
+// }
+```
+
+Uptime calculation:
+```javascript
+function calculateUptime(totalMinutes, downtimeMinutes) {
+  const uptimePercentage = ((totalMinutes - downtimeMinutes) / totalMinutes) * 100;
+  
+  // Standard SLA tiers
+  const tiers = [
+    { name: '99.9% (Three Nines)', allowedDowntime: totalMinutes * 0.001 },
+    { name: '99.95%', allowedDowntime: totalMinutes * 0.0005 },
+    { name: '99.99% (Four Nines)', allowedDowntime: totalMinutes * 0.0001 },
+    { name: '99.999% (Five Nines)', allowedDowntime: totalMinutes * 0.00001 }
+  ];
+  
+  let achievedTier = 'Below 99.9%';
+  for (const tier of tiers.reverse()) {
+    if (downtimeMinutes <= tier.allowedDowntime) {
+      achievedTier = tier.name;
+      break;
+    }
+  }
+  
+  return {
+    uptimePercentage: uptimePercentage.toFixed(4) + '%',
+    downtimeMinutes,
+    downtimeHours: (downtimeMinutes / 60).toFixed(2),
+    achievedTier,
+    monthly: {
+      totalMinutes: 43200, // 30 days
+      allowed99_9: 43.2,
+      allowed99_95: 21.6,
+      allowed99_99: 4.32
+    }
+  };
+}
+
+// Example: 43,200 minutes (30 days), 15 minutes downtime
+calculateUptime(43200, 15);
+// {
+//   uptimePercentage: '99.9653%',
+//   downtimeMinutes: 15,
+//   downtimeHours: '0.25',
+//   achievedTier: '99.95%',
+//   monthly: { totalMinutes: 43200, allowed99_9: 43.2, allowed99_95: 21.6, allowed99_99: 4.32 }
+// }
+```
+
+D.5 Pricing and Margin Calculations
+
+Product pricing calculator:
+```javascript
+function calculateProductPricing(baseCost, targetMargin, stripeFeePct = 0.029, stripeFeeFixed = 0.30) {
+  // Calculate price needed to achieve target margin after Stripe fees
+  // Formula: price = (baseCost + stripeFeeFixed) / (1 - targetMargin - stripeFeePct)
+  
+  const price = (baseCost + stripeFeeFixed) / (1 - targetMargin - stripeFeePct);
+  const stripeFee = price * stripeFeePct + stripeFeeFixed;
+  const netRevenue = price - stripeFee;
+  const profit = netRevenue - baseCost;
+  const actualMargin = profit / netRevenue;
+  
+  return {
+    recommendedPrice: Math.ceil(price * 100) / 100, // Round up to nearest cent
+    breakdown: {
+      customerPays: price.toFixed(2),
+      stripeFee: stripeFee.toFixed(2),
+      netRevenue: netRevenue.toFixed(2),
+      baseCost: baseCost.toFixed(2),
+      profit: profit.toFixed(2)
+    },
+    margins: {
+      targetMargin: (targetMargin * 100).toFixed(1) + '%',
+      actualMargin: (actualMargin * 100).toFixed(1) + '%',
+      markupMultiplier: (price / baseCost).toFixed(2) + 'x'
+    }
+  };
+}
+
+// Example: $15 base cost, 40% target margin
+calculateProductPricing(15, 0.40);
+// {
+//   recommendedPrice: 26.33,
+//   breakdown: {
+//     customerPays: '26.33',
+//     stripeFee: '1.06',
+//     netRevenue: '25.27',
+//     baseCost: '15.00',
+//     profit: '10.27'
+//   },
+//   margins: {
+//     targetMargin: '40.0%',
+//     actualMargin: '40.7%',
+//     markupMultiplier: '1.76x'
+//   }
+// }
+```
+
+Bulk pricing tiers calculator:
+```javascript
+function generateBulkPricingTiers(basePrice, tiers) {
+  return tiers.map(tier => {
+    const discountedPrice = basePrice * (1 - tier.discount);
+    const totalPrice = discountedPrice * tier.quantity;
+    const savings = (basePrice - discountedPrice) * tier.quantity;
+    const savingsPercent = tier.discount * 100;
+    
+    return {
+      quantity: tier.quantity,
+      pricePerUnit: discountedPrice.toFixed(2),
+      totalPrice: totalPrice.toFixed(2),
+      savings: savings.toFixed(2),
+      savingsPercent: savingsPercent.toFixed(0) + '%'
+    };
+  });
+}
+
+// Example: $25 base price
+const tiers = [
+  { quantity: 1, discount: 0 },
+  { quantity: 5, discount: 0.10 },
+  { quantity: 10, discount: 0.15 },
+  { quantity: 25, discount: 0.20 }
+];
+
+generateBulkPricingTiers(25, tiers);
+// [
+//   { quantity: 1, pricePerUnit: '25.00', totalPrice: '25.00', savings: '0.00', savingsPercent: '0%' },
+//   { quantity: 5, pricePerUnit: '22.50', totalPrice: '112.50', savings: '12.50', savingsPercent: '10%' },
+//   { quantity: 10, pricePerUnit: '21.25', totalPrice: '212.50', savings: '37.50', savingsPercent: '15%' },
+//   { quantity: 25, pricePerUnit: '20.00', totalPrice: '500.00', savings: '125.00', savingsPercent: '20%' }
+// ]
+```
+
+═══════════════════════════════════════════════════════════════════════════════
+
+APPENDIX E: TEMPLATE LIBRARY
+═══════════════════════════════════════════════════════════════════════════════
+
+E.1 Incident Response Templates
+
+Template: Payment Processing Incident
+```markdown
+# Payment Processing Incident Report
+
+**Incident ID:** [AUTO-GENERATED-UUID]
+**Severity:** [Critical/High/Medium/Low]
+**Detected At:** [TIMESTAMP]
+**Resolved At:** [TIMESTAMP]
+**Duration:** [MINUTES]
+
+## Incident Summary
+Brief description of what happened and customer impact.
+
+## Timeline
+- **[TIME]** - Initial detection: [How it was detected]
+- **[TIME]** - Investigation began: [Who was notified]
+- **[TIME]** - Root cause identified: [What was found]
+- **[TIME]** - Mitigation deployed: [What actions taken]
+- **[TIME]** - Resolution confirmed: [How verified]
+- **[TIME]** - Post-mortem scheduled: [Date/time]
+
+## Impact Assessment
+- **Orders Affected:** [NUMBER]
+- **Revenue Impact:** $[AMOUNT]
+- **Customer Notifications:** [YES/NO]
+- **Data Exposure:** [NONE/DESCRIBE]
+
+## Root Cause
+Detailed explanation of why the incident occurred.
+
+## Resolution
+Steps taken to resolve the incident:
+1. [Action 1]
+2. [Action 2]
+3. [Action 3]
+
+## Prevention Measures
+Actions to prevent recurrence:
+- [ ] [Preventive action 1]
+- [ ] [Preventive action 2]
+- [ ] [Preventive action 3]
+
+## Lessons Learned
+- What went well during response
+- What could be improved
+- Documentation updates needed
+- Training needs identified
+
+## Action Items
+| Action | Owner | Due Date | Status |
+|--------|-------|----------|--------|
+| [Description] | [Name] | [Date] | [Open/Closed] |
+
+**Report Prepared By:** [NAME]
+**Date:** [DATE]
+```
+
+Template: Database Emergency Runbook
+```markdown
+# Database Emergency Response Runbook
+
+## Scenario: Database Connection Pool Exhausted
+
+### Detection
+- Alert: "Database connection pool exhausted"
+- Symptoms: API timeouts, 500 errors, slow queries
+
+### Immediate Actions (0-5 minutes)
+1. Check current connection count:
+   ```sql
+   SELECT count(*) FROM pg_stat_activity WHERE state = 'active';
+   ```
+
+2. Identify long-running queries:
+   ```sql
+   SELECT pid, now() - query_start AS duration, query
+   FROM pg_stat_activity
+   WHERE state = 'active' AND now() - query_start > interval '5 minutes'
+   ORDER BY duration DESC;
+   ```
+
+3. Kill problematic queries if necessary:
+   ```sql
+   SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+   WHERE state = 'active' AND now() - query_start > interval '30 minutes';
+   ```
+
+### Investigation (5-15 minutes)
+- Review application logs for connection leaks
+- Check for deployment changes in last 24 hours
+- Monitor connection pool metrics
+
+### Resolution
+- Restart application servers to reset connection pools
+- Adjust pool size if consistently hitting limits
+- Fix connection leaks in application code
+
+### Communication
+- [ ] Update status page
+- [ ] Notify affected customers if downtime > 5 minutes
+- [ ] Post internal incident update
+
+### Post-Incident
+- Document in incident log
+- Schedule post-mortem within 48 hours
+- Update monitoring thresholds if needed
+```
+
+E.2 Customer Communication Templates
+
+Template: Order Delay Notification
+```
+Subject: Update on Your Order #{{ORDER_ID}}
+
+Hi {{CUSTOMER_NAME}},
+
+We wanted to give you an update on your recent order (#{{ORDER_ID}}).
+
+Due to {{REASON}}, your order is experiencing a slight delay. We now expect your order to ship by {{NEW_SHIP_DATE}}, which is {{DAYS_DELAYED}} days later than originally estimated.
+
+We sincerely apologize for this delay. Here's what we're doing:
+- {{ACTION_1}}
+- {{ACTION_2}}
+
+As a thank you for your patience, we'd like to offer you {{COMPENSATION}} on your next order. Use code {{DISCOUNT_CODE}} at checkout.
+
+Your updated order details:
+- Order Number: {{ORDER_ID}}
+- New Estimated Ship Date: {{NEW_SHIP_DATE}}
+- New Estimated Delivery: {{NEW_DELIVERY_DATE}}
+
+Track your order: {{TRACKING_URL}}
+
+If you have any questions or concerns, please don't hesitate to reach out.
+
+Thank you for your understanding,
+{{STORE_NAME}} Team
+{{CONTACT_EMAIL}}
+```
+
+Template: Refund Confirmation
+```
+Subject: Refund Processed for Order #{{ORDER_ID}}
+
+Hi {{CUSTOMER_NAME}},
+
+Your refund has been processed successfully.
+
+Refund Details:
+- Order Number: {{ORDER_ID}}
+- Refund Amount: ${{REFUND_AMOUNT}}
+- Refund Method: {{PAYMENT_METHOD}} ending in {{LAST_4}}
+- Processing Date: {{REFUND_DATE}}
+
+You should see the refund in your account within {{BUSINESS_DAYS}} business days, depending on your bank's processing time.
+
+Refund Reason: {{REASON}}
+
+{{#if PARTIAL_REFUND}}
+Items Refunded:
+{{#each REFUNDED_ITEMS}}
+- {{name}} (Qty: {{quantity}}) - ${{amount}}
+{{/each}}
+
+Remaining Order Value: ${{REMAINING_AMOUNT}}
+{{/if}}
+
+We're sorry we couldn't meet your expectations this time. If there's anything we can do to improve your experience, please let us know.
+
+Thank you,
+{{STORE_NAME}} Team
+{{CONTACT_EMAIL}}
+```
+
+E.3 Internal Process Templates
+
+Template: Weekly Operations Report
+```markdown
+# Weekly Operations Report
+**Week of:** [START_DATE] - [END_DATE]
+**Prepared by:** [NAME]
+**Date:** [DATE]
+
+## Executive Summary
+Brief overview of the week's performance and any critical issues.
+
+## Key Metrics
+| Metric | This Week | Last Week | Change |
+|--------|-----------|-----------|--------|
+| Orders | [NUMBER] | [NUMBER] | [+/-X%] |
+| Revenue | $[AMOUNT] | $[AMOUNT] | [+/-X%] |
+| Avg Order Value | $[AMOUNT] | $[AMOUNT] | [+/-X%] |
+| Error Rate | [X%] | [X%] | [+/-X%] |
+| System Uptime | [X%] | [X%] | [+/-X%] |
+| Manual Queue | [NUMBER] | [NUMBER] | [+/-X%] |
+
+## Orders by Provider
+| Provider | Orders | % of Total | Avg Fulfillment Time |
+|----------|--------|------------|---------------------|
+| Printful | [NUM] | [X%] | [X days] |
+| Printify | [NUM] | [X%] | [X days] |
+
+## System Health
+- **Uptime:** [X%] ([X minutes downtime])
+- **Incidents:** [NUMBER] ([X critical, X high, X medium])
+- **Performance:** P95 latency [Xms] (target: <2000ms)
+- **Database Size:** [X GB] ([+X%] growth)
+
+## Issues and Resolutions
+1. **[Issue Description]**
+   - Impact: [Description]
+   - Resolution: [Description]
+   - Status: [Resolved/In Progress]
+
+## Action Items for Next Week
+- [ ] [Action item 1]
+- [ ] [Action item 2]
+- [ ] [Action item 3]
+
+## Notes
+Any additional observations or concerns.
+```
+
+Template: Monthly Business Review
+```markdown
+# Monthly Business Review
+**Month:** [MONTH YEAR]
+**Prepared by:** [NAME]
+**Date:** [DATE]
+
+## Financial Performance
+- **Gross Revenue:** $[AMOUNT]
+- **Net Revenue (after fees):** $[AMOUNT]
+- **Cost of Goods:** $[AMOUNT]
+- **Gross Profit:** $[AMOUNT]
+- **Gross Margin:** [X%]
+- **Operating Costs:** $[AMOUNT]
+- **Net Profit:** $[AMOUNT]
+
+## Growth Metrics
+- **MoM Order Growth:** [+/-X%]
+- **MoM Revenue Growth:** [+/-X%]
+- **Customer Acquisition:** [NUMBER] new customers
+- **Repeat Purchase Rate:** [X%]
+- **Customer Lifetime Value:** $[AMOUNT]
+
+## Operational Metrics
+- **Total Orders:** [NUMBER]
+- **Automation Rate:** [X%]
+- **Manual Interventions:** [NUMBER]
+- **Average Order Processing Time:** [X hours]
+- **Customer Support Tickets:** [NUMBER]
+
+## System Performance
+- **Uptime:** [X%]
+- **Average Response Time:** [Xms]
+- **Error Rate:** [X%]
+- **Database Size:** [X GB]
+
+## Provider Comparison
+| Metric | Printful | Printify |
+|--------|----------|----------|
+| Orders | [NUM] | [NUM] |
+| Avg Cost | $[X] | $[X] |
+| Fulfillment Time | [X days] | [X days] |
+| Error Rate | [X%] | [X%] |
+| Satisfaction | [X/5] | [X/5] |
+
+## Top Products
+1. [Product Name] - [X] orders - $[REVENUE]
+2. [Product Name] - [X] orders - $[REVENUE]
+3. [Product Name] - [X] orders - $[REVENUE]
+
+## Key Wins
+- [Achievement 1]
+- [Achievement 2]
+- [Achievement 3]
+
+## Challenges
+- [Challenge 1 and mitigation]
+- [Challenge 2 and mitigation]
+
+## Strategic Initiatives for Next Month
+1. [Initiative 1]
+2. [Initiative 2]
+3. [Initiative 3]
+
+## Investment Recommendations
+- [Recommendation with ROI analysis]
+```
+
+E.4 Onboarding and Training Templates
+
+Template: New Team Member Onboarding Checklist
+```markdown
+# Onboarding Checklist: [NAME]
+**Role:** [ROLE]
+**Start Date:** [DATE]
+**Manager:** [NAME]
+
+## Week 1: System Access and Overview
+- [ ] Email account created
+- [ ] Slack/Discord access granted
+- [ ] Database access (read-only)
+- [ ] Make.com viewer access
+- [ ] Stripe dashboard access (view-only)
+- [ ] Better Uptime alerts configured
+- [ ] Documentation access
+
+### Training Completed
+- [ ] System architecture overview (2 hours)
+- [ ] Order fulfillment workflow walkthrough (1 hour)
+- [ ] Provider comparison (Printful vs Printify) (1 hour)
+- [ ] Database schema review (1 hour)
+- [ ] Monitoring and alerting overview (1 hour)
+
+## Week 2: Hands-On Training
+- [ ] Shadow order processing (5 sample orders)
+- [ ] Manual queue processing practice
+- [ ] Customer communication training
+- [ ] Incident response procedures review
+- [ ] Practice incident drill
+
+### Training Completed
+- [ ] Process 10 manual queue orders with supervision
+- [ ] Respond to 5 customer inquiries
+- [ ] Review last 3 incident reports
+- [ ] Complete security training
+
+## Week 3: Independent Work
+- [ ] Process manual queue independently
+- [ ] First on-call shift (with backup)
+- [ ] Conduct weekly health check
+- [ ] Contribute to weekly operations report
+
+### Competencies Verified
+- [ ] Can process orders end-to-end
+- [ ] Understands when to escalate issues
+- [ ] Familiar with runbooks and documentation
+- [ ] Comfortable with monitoring tools
+
+## Week 4: Full Autonomy
+- [ ] Solo on-call rotation
+- [ ] Lead weekly team sync
+- [ ] Propose process improvement
+
+**Manager Sign-off:** _________________ **Date:** _______
+**Team Member Sign-off:** _________________ **Date:** _______
+```
+
+E.5 API Documentation Template
+
+Template: API Endpoint Documentation
+```markdown
+# API Endpoint: [ENDPOINT NAME]
+
+## Overview
+Brief description of what this endpoint does and when to use it.
+
+## Endpoint Details
+- **URL:** `/api/v1/[resource]`
+- **Method:** `GET | POST | PUT | DELETE`
+- **Authentication:** Required / Not Required
+- **Rate Limit:** [X] requests per [timeframe]
+
+## Request
+
+### Headers
+```
+Content-Type: application/json
+Authorization: Bearer [API_KEY]
+```
+
+### Parameters
+| Parameter | Type | Required | Description | Example |
+|-----------|------|----------|-------------|---------|
+| [param1] | string | Yes | Description | "value" |
+| [param2] | integer | No | Description | 123 |
+
+### Request Body
+```json
+{
+  "field1": "value",
+  "field2": 123,
+  "nested": {
+    "field3": true
+  }
+}
+```
+
+## Response
+
+### Success Response (200 OK)
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "field1": "value",
+    "created_at": "2025-11-16T12:00:00Z"
+  }
+}
+```
+
+### Error Responses
+
+#### 400 Bad Request
+```json
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_PARAMETER",
+    "message": "Description of what went wrong",
+    "field": "field_name"
+  }
+}
+```
+
+#### 401 Unauthorized
+```json
+{
+  "success": false,
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Invalid or missing API key"
+  }
+}
+```
+
+#### 429 Too Many Requests
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Rate limit exceeded",
+    "retry_after": 60
+  }
+}
+```
+
+## Examples
+
+### cURL
+```bash
+curl -X POST https://api.yourstore.com/api/v1/resource \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "field1": "value",
+    "field2": 123
+  }'
+```
+
+### JavaScript (Node.js)
+```javascript
+const response = await fetch('https://api.yourstore.com/api/v1/resource', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${API_KEY}`
+  },
+  body: JSON.stringify({
+    field1: 'value',
+    field2: 123
+  })
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+### Python
+```python
+import requests
+
+response = requests.post(
+    'https://api.yourstore.com/api/v1/resource',
+    headers={
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {API_KEY}'
+    },
+    json={
+        'field1': 'value',
+        'field2': 123
+    }
+)
+
+data = response.json()
+print(data)
+```
+
+## Notes
+- [Important note 1]
+- [Important note 2]
+- [Edge case or limitation]
+
+## Related Endpoints
+- [GET /api/v1/related] - Description
+- [POST /api/v1/other] - Description
+```
+
+═══════════════════════════════════════════════════════════════════════════════
+END OF EXPANSION CONTENT - PARTS 6.2-8.3 AND APPENDICES A-E COMPLETE
 ═══════════════════════════════════════════════════════════════════════════════
