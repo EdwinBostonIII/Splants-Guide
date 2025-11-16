@@ -5569,4 +5569,942 @@ Validation checkpoint:
 
 ═══════════════════════════════════════════════════════════════════════════════
 
-[Content continues with Part 8 (Security and Compliance) with sections 8.1-8.3, then all Appendices A-G with same level of detail...]
+PART 8: SECURITY AND COMPLIANCE
+═══════════════════════════════════════════════════════════════════════════════
+
+Introduction: Protecting Your Business and Customers
+
+Security is not optional. A single breach can destroy years of trust, trigger
+regulatory fines, and in extreme cases, end your business. This part covers
+practical security implementations that protect customer data, prevent fraud,
+and ensure compliance with regulations.
+
+Target time investment for Part 8: 20-40 hours
+Expected outcomes:
+- PCI DSS Level 1 compliance readiness for payment processing
+- GDPR/CCPA compliance for customer data handling
+- Security incident response procedures documented and tested
+- Vulnerability management process operational
+- Regular security audits and penetration testing scheduled
+
+═══════════════════════════════════════════════════════════════════════════════
+
+SECTION 8.1: SECURITY FUNDAMENTALS
+
+Purpose: Implement baseline security controls to protect systems and data.
+
+8.1.1 Authentication and Authorization
+
+Multi-factor authentication for admin access:
+```javascript
+// Require MFA for admin dashboard access
+async function authenticateAdmin(email, password, mfaToken) {
+  // Step 1: Verify password
+  const user = await db.query(`
+    SELECT id, email, password_hash, mfa_secret, role
+    FROM admin_users
+    WHERE email = $1 AND role IN ('admin', 'manager')
+  `, [email]);
+  
+  if (!user.rows[0]) {
+    await logSecurityEvent('login_failed', { email, reason: 'user_not_found' });
+    throw new Error('Invalid credentials');
+  }
+  
+  const validPassword = await bcrypt.compare(password, user.rows[0].password_hash);
+  if (!validPassword) {
+    await logSecurityEvent('login_failed', { email, reason: 'invalid_password' });
+    throw new Error('Invalid credentials');
+  }
+  
+  // Step 2: Verify MFA token
+  const validMFA = speakeasy.totp.verify({
+    secret: user.rows[0].mfa_secret,
+    encoding: 'base32',
+    token: mfaToken,
+    window: 1 // Allow 30 seconds time drift
+  });
+  
+  if (!validMFA) {
+    await logSecurityEvent('mfa_failed', { email });
+    throw new Error('Invalid MFA token');
+  }
+  
+  // Step 3: Generate session token
+  const sessionToken = crypto.randomBytes(32).toString('hex');
+  await db.query(`
+    INSERT INTO admin_sessions (user_id, session_token, expires_at, ip_address)
+    VALUES ($1, $2, NOW() + INTERVAL '8 hours', $3)
+  `, [user.rows[0].id, sessionToken, request.ip]);
+  
+  await logSecurityEvent('login_success', { email, ip: request.ip });
+  
+  return { sessionToken, user: user.rows[0] };
+}
+```
+
+Role-based access control (RBAC):
+```sql
+-- Admin roles table
+CREATE TABLE admin_users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  mfa_secret TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'manager', 'support', 'viewer')),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  last_login TIMESTAMP,
+  is_active BOOLEAN DEFAULT true
+);
+
+-- Permissions matrix
+CREATE TABLE role_permissions (
+  role TEXT NOT NULL,
+  resource TEXT NOT NULL,
+  action TEXT NOT NULL,
+  allowed BOOLEAN NOT NULL DEFAULT true,
+  PRIMARY KEY (role, resource, action)
+);
+
+-- Define permissions
+INSERT INTO role_permissions (role, resource, action) VALUES
+  -- Admin: full access
+  ('admin', 'orders', 'read'),
+  ('admin', 'orders', 'write'),
+  ('admin', 'orders', 'delete'),
+  ('admin', 'settings', 'read'),
+  ('admin', 'settings', 'write'),
+  ('admin', 'users', 'read'),
+  ('admin', 'users', 'write'),
+  
+  -- Manager: read/write orders, read-only settings
+  ('manager', 'orders', 'read'),
+  ('manager', 'orders', 'write'),
+  ('manager', 'settings', 'read'),
+  
+  -- Support: read orders, limited write
+  ('support', 'orders', 'read'),
+  ('support', 'orders', 'update_status'),
+  ('support', 'customers', 'read'),
+  
+  -- Viewer: read-only access
+  ('viewer', 'orders', 'read'),
+  ('viewer', 'reports', 'read');
+
+-- Check permission function
+CREATE OR REPLACE FUNCTION has_permission(
+  user_id UUID,
+  resource_name TEXT,
+  action_name TEXT
+) RETURNS BOOLEAN AS $$
+DECLARE
+  user_role TEXT;
+  has_perm BOOLEAN;
+BEGIN
+  SELECT role INTO user_role
+  FROM admin_users
+  WHERE id = user_id AND is_active = true;
+  
+  IF user_role IS NULL THEN
+    RETURN false;
+  END IF;
+  
+  SELECT allowed INTO has_perm
+  FROM role_permissions
+  WHERE role = user_role
+    AND resource = resource_name
+    AND action = action_name;
+  
+  RETURN COALESCE(has_perm, false);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+API key management for integrations:
+```javascript
+// Generate API keys for external integrations
+async function generateApiKey(userId, description, permissions = []) {
+  const apiKey = 'sk_live_' + crypto.randomBytes(32).toString('hex');
+  const hashedKey = await bcrypt.hash(apiKey, 10);
+  
+  await db.query(`
+    INSERT INTO api_keys (
+      user_id, key_hash, description, permissions, created_at, last_used
+    ) VALUES ($1, $2, $3, $4, NOW(), NULL)
+  `, [userId, hashedKey, description, JSON.stringify(permissions)]);
+  
+  // Return plain key ONCE (cannot be retrieved again)
+  return apiKey;
+}
+
+// Validate API key on incoming requests
+async function validateApiKey(apiKey) {
+  if (!apiKey || !apiKey.startsWith('sk_live_')) {
+    return null;
+  }
+  
+  const keys = await db.query(`
+    SELECT id, user_id, key_hash, permissions, is_active
+    FROM api_keys
+    WHERE is_active = true
+  `);
+  
+  for (const key of keys.rows) {
+    const valid = await bcrypt.compare(apiKey, key.key_hash);
+    if (valid) {
+      // Update last used timestamp
+      await db.query(`
+        UPDATE api_keys SET last_used = NOW() WHERE id = $1
+      `, [key.id]);
+      
+      return {
+        userId: key.user_id,
+        permissions: key.permissions
+      };
+    }
+  }
+  
+  await logSecurityEvent('invalid_api_key', { key_prefix: apiKey.substring(0, 15) });
+  return null;
+}
+```
+
+8.1.2 Data Protection and Encryption
+
+Encrypt sensitive data at rest:
+```sql
+-- Enable pgcrypto extension
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Create encrypted customers table
+CREATE TABLE customers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  email_encrypted BYTEA, -- Encrypted copy for compliance
+  full_name_encrypted BYTEA,
+  phone_encrypted BYTEA,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Encryption helper functions
+CREATE OR REPLACE FUNCTION encrypt_field(plain_text TEXT, encryption_key TEXT)
+RETURNS BYTEA AS $$
+BEGIN
+  RETURN pgp_sym_encrypt(plain_text, encryption_key);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION decrypt_field(encrypted_data BYTEA, encryption_key TEXT)
+RETURNS TEXT AS $$
+BEGIN
+  RETURN pgp_sym_decrypt(encrypted_data, encryption_key);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Usage
+INSERT INTO customers (email, email_encrypted, full_name_encrypted)
+VALUES (
+  'customer@example.com',
+  encrypt_field('customer@example.com', current_setting('app.encryption_key')),
+  encrypt_field('John Smith', current_setting('app.encryption_key'))
+);
+
+-- Decrypt when needed
+SELECT
+  email,
+  decrypt_field(full_name_encrypted, current_setting('app.encryption_key')) AS full_name
+FROM customers
+WHERE id = 'customer-uuid';
+```
+
+Secure API communication with TLS:
+```javascript
+// Enforce HTTPS for all API endpoints
+function enforceHTTPS(req, res, next) {
+  if (req.headers['x-forwarded-proto'] !== 'https' && process.env.NODE_ENV === 'production') {
+    return res.status(403).json({
+      error: 'HTTPS required',
+      message: 'All API requests must use HTTPS'
+    });
+  }
+  next();
+}
+
+// Validate TLS certificate for outgoing requests
+const https = require('https');
+const agent = new https.Agent({
+  rejectUnauthorized: true, // Reject invalid certificates
+  minVersion: 'TLSv1.2' // Minimum TLS version
+});
+
+async function secureApiCall(url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    agent: agent
+  });
+  
+  return response;
+}
+```
+
+Implement field-level encryption for payment data:
+```javascript
+// Never store full credit card numbers - use Stripe tokens
+// But if you must store payment method IDs, encrypt them
+
+const crypto = require('crypto');
+
+function encryptPaymentMethodId(paymentMethodId, encryptionKey) {
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(encryptionKey, 'hex'), iv);
+  
+  let encrypted = cipher.update(paymentMethodId, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  
+  const authTag = cipher.getAuthTag();
+  
+  return {
+    encrypted: encrypted,
+    iv: iv.toString('hex'),
+    authTag: authTag.toString('hex')
+  };
+}
+
+function decryptPaymentMethodId(encryptedData, encryptionKey) {
+  const decipher = crypto.createDecipheriv(
+    'aes-256-gcm',
+    Buffer.from(encryptionKey, 'hex'),
+    Buffer.from(encryptedData.iv, 'hex')
+  );
+  
+  decipher.setAuthTag(Buffer.from(encryptedData.authTag, 'hex'));
+  
+  let decrypted = decipher.update(encryptedData.encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  
+  return decrypted;
+}
+
+// Usage
+const encrypted = encryptPaymentMethodId('pm_1Abc123', process.env.ENCRYPTION_KEY);
+await db.query(`
+  INSERT INTO payment_methods (customer_id, encrypted_pm_id, iv, auth_tag)
+  VALUES ($1, $2, $3, $4)
+`, [customerId, encrypted.encrypted, encrypted.iv, encrypted.authTag]);
+```
+
+8.1.3 Input Validation and Sanitization
+
+Prevent SQL injection:
+```javascript
+// NEVER do this (vulnerable to SQL injection)
+async function getBadOrder(orderId) {
+  const query = `SELECT * FROM orders WHERE order_id = '${orderId}'`;
+  return await db.query(query); // DANGEROUS!
+}
+
+// ALWAYS use parameterized queries
+async function getGoodOrder(orderId) {
+  const query = `SELECT * FROM orders WHERE order_id = $1`;
+  return await db.query(query, [orderId]); // SAFE
+}
+
+// Validate input format
+function validateOrderId(orderId) {
+  // Order IDs should be UUIDs
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  
+  if (!uuidRegex.test(orderId)) {
+    throw new Error('Invalid order ID format');
+  }
+  
+  return orderId;
+}
+```
+
+Sanitize user input to prevent XSS:
+```javascript
+const validator = require('validator');
+
+function sanitizeCustomerData(input) {
+  return {
+    email: validator.normalizeEmail(input.email || ''),
+    name: validator.escape(input.name || '').substring(0, 100),
+    phone: input.phone ? input.phone.replace(/[^0-9+\-() ]/g, '') : null,
+    address: {
+      line1: validator.escape(input.address?.line1 || '').substring(0, 200),
+      line2: validator.escape(input.address?.line2 || '').substring(0, 200),
+      city: validator.escape(input.address?.city || '').substring(0, 100),
+      state: validator.escape(input.address?.state || '').substring(0, 50),
+      postal_code: input.address?.postal_code?.replace(/[^0-9A-Z\-\s]/gi, '') || '',
+      country: input.address?.country?.toUpperCase().substring(0, 2) || ''
+    }
+  };
+}
+
+// Validate email format
+function validateEmail(email) {
+  if (!validator.isEmail(email)) {
+    throw new Error('Invalid email format');
+  }
+  
+  // Additional checks
+  const [localPart, domain] = email.split('@');
+  
+  // Reject disposable email domains
+  const disposableDomains = ['tempmail.com', '10minutemail.com', 'guerrillamail.com'];
+  if (disposableDomains.includes(domain.toLowerCase())) {
+    throw new Error('Disposable email addresses not allowed');
+  }
+  
+  return email.toLowerCase();
+}
+```
+
+Rate limiting to prevent abuse:
+```javascript
+// Simple rate limiter using Redis or in-memory store
+const rateLimit = new Map();
+
+async function checkRateLimit(identifier, maxRequests = 100, windowMs = 60000) {
+  const now = Date.now();
+  const windowStart = now - windowMs;
+  
+  // Get or create rate limit entry
+  let requests = rateLimit.get(identifier) || [];
+  
+  // Remove expired requests
+  requests = requests.filter(timestamp => timestamp > windowStart);
+  
+  if (requests.length >= maxRequests) {
+    throw new Error('Rate limit exceeded');
+  }
+  
+  // Add current request
+  requests.push(now);
+  rateLimit.set(identifier, requests);
+  
+  return {
+    allowed: true,
+    remaining: maxRequests - requests.length,
+    resetAt: new Date(now + windowMs)
+  };
+}
+
+// Apply rate limiting to API endpoints
+async function handleApiRequest(req, res) {
+  const identifier = req.ip || req.headers['x-forwarded-for'];
+  
+  try {
+    const rateLimitStatus = await checkRateLimit(identifier, 100, 60000);
+    
+    res.setHeader('X-RateLimit-Limit', '100');
+    res.setHeader('X-RateLimit-Remaining', rateLimitStatus.remaining);
+    res.setHeader('X-RateLimit-Reset', rateLimitStatus.resetAt.toISOString());
+    
+    // Process request
+    const result = await processRequest(req);
+    res.json(result);
+  } catch (error) {
+    if (error.message === 'Rate limit exceeded') {
+      res.status(429).json({
+        error: 'Too Many Requests',
+        message: 'Rate limit exceeded. Please try again later.',
+        retryAfter: 60
+      });
+    } else {
+      throw error;
+    }
+  }
+}
+```
+
+8.1.4 Security Logging and Monitoring
+
+Log all security-relevant events:
+```sql
+-- Security events table
+CREATE TABLE security_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_type TEXT NOT NULL,
+  severity TEXT NOT NULL CHECK (severity IN ('info', 'warning', 'critical')),
+  user_id UUID,
+  ip_address TEXT,
+  user_agent TEXT,
+  event_details JSONB,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_security_events_type ON security_events(event_type, created_at DESC);
+CREATE INDEX idx_security_events_severity ON security_events(severity, created_at DESC);
+CREATE INDEX idx_security_events_user ON security_events(user_id, created_at DESC);
+
+-- Log security event function
+CREATE OR REPLACE FUNCTION log_security_event(
+  p_event_type TEXT,
+  p_severity TEXT,
+  p_user_id UUID,
+  p_ip_address TEXT,
+  p_details JSONB
+) RETURNS UUID AS $$
+DECLARE
+  event_id UUID;
+BEGIN
+  INSERT INTO security_events (event_type, severity, user_id, ip_address, event_details)
+  VALUES (p_event_type, p_severity, p_user_id, p_ip_address, p_details)
+  RETURNING id INTO event_id;
+  
+  -- Alert on critical events
+  IF p_severity = 'critical' THEN
+    PERFORM pg_notify('security_alert', json_build_object(
+      'event_id', event_id,
+      'event_type', p_event_type,
+      'details', p_details
+    )::TEXT);
+  END IF;
+  
+  RETURN event_id;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+Monitor for suspicious patterns:
+```sql
+-- Detect brute force login attempts
+CREATE OR REPLACE VIEW suspicious_login_attempts AS
+SELECT
+  ip_address,
+  COUNT(*) AS failed_attempts,
+  COUNT(DISTINCT user_id) AS targeted_accounts,
+  MIN(created_at) AS first_attempt,
+  MAX(created_at) AS last_attempt,
+  array_agg(DISTINCT event_type) AS event_types
+FROM security_events
+WHERE event_type IN ('login_failed', 'mfa_failed')
+  AND created_at > NOW() - INTERVAL '1 hour'
+GROUP BY ip_address
+HAVING COUNT(*) >= 5
+ORDER BY failed_attempts DESC;
+
+-- Detect unusual access patterns
+CREATE OR REPLACE VIEW unusual_access_patterns AS
+WITH user_access AS (
+  SELECT
+    user_id,
+    ip_address,
+    COUNT(*) AS access_count,
+    COUNT(DISTINCT ip_address) AS distinct_ips,
+    array_agg(DISTINCT ip_address) AS ip_list
+  FROM security_events
+  WHERE event_type = 'login_success'
+    AND created_at > NOW() - INTERVAL '24 hours'
+  GROUP BY user_id
+)
+SELECT
+  user_id,
+  distinct_ips,
+  access_count,
+  ip_list
+FROM user_access
+WHERE distinct_ips >= 3 -- Same user from 3+ IPs in 24 hours
+ORDER BY distinct_ips DESC;
+
+-- Automated response to security threats
+CREATE OR REPLACE FUNCTION auto_block_suspicious_ip() RETURNS TRIGGER AS $$
+BEGIN
+  -- If IP has 10+ failed login attempts in last hour, block it
+  IF (
+    SELECT COUNT(*) FROM security_events
+    WHERE ip_address = NEW.ip_address
+      AND event_type IN ('login_failed', 'mfa_failed')
+      AND created_at > NOW() - INTERVAL '1 hour'
+  ) >= 10 THEN
+    INSERT INTO blocked_ips (ip_address, reason, blocked_at)
+    VALUES (NEW.ip_address, 'Automated block: excessive failed login attempts', NOW())
+    ON CONFLICT (ip_address) DO NOTHING;
+    
+    PERFORM log_security_event(
+      'ip_auto_blocked',
+      'critical',
+      NULL,
+      NEW.ip_address,
+      jsonb_build_object('reason', 'excessive_failed_logins')
+    );
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_auto_block_suspicious_ip
+  AFTER INSERT ON security_events
+  FOR EACH ROW
+  WHEN (NEW.event_type IN ('login_failed', 'mfa_failed'))
+  EXECUTE FUNCTION auto_block_suspicious_ip();
+```
+
+Production Reality Box:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PRODUCTION REALITY: Security Logging Caught Insider Threat                  │
+│                                                                             │
+│ One company's security logs detected unusual pattern: a support employee   │
+│ accessed 234 customer records in a 2-hour period, vs their normal average  │
+│ of 15/day. Automated alert triggered immediate investigation. Employee was │
+│ exporting customer data to sell to competitor. Security logs provided      │
+│ irrefutable evidence: timestamps, IP addresses, exact records accessed.    │
+│ Legal action successful due to detailed audit trail. Without security      │
+│ logging, breach would have gone undetected for months, potentially         │
+│ affecting 10,000+ customers. Cost of security logging: $2/month storage.   │
+│ Value of early detection: prevented $500K+ lawsuit, maintained customer    │
+│ trust, avoided regulatory fines. Security logging isn't paranoia - it's    │
+│ insurance and accountability.                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Validation checkpoint:
+  □ Multi-factor authentication required for all admin accounts
+  □ Role-based access control implemented with least privilege principle
+  □ All sensitive data encrypted at rest and in transit
+  □ Input validation and sanitization applied to all user inputs
+  □ Rate limiting prevents abuse of API endpoints
+  □ Security events logged with sufficient detail for investigations
+  □ Automated alerts configured for critical security events
+  □ Regular security log reviews scheduled
+
+═══════════════════════════════════════════════════════════════════════════════
+
+SECTION 8.2: COMPLIANCE REQUIREMENTS
+
+Purpose: Meet legal and regulatory requirements for payment processing and
+data protection.
+
+8.2.1 PCI DSS Compliance for Payment Processing
+
+Using Stripe reduces PCI burden (Stripe is PCI Level 1 certified), but you
+still have responsibilities:
+
+PCI DSS Self-Assessment Questionnaire (SAQ A):
+```
+Your compliance category: SAQ A (simplest)
+Applies when: You use Stripe Checkout or Elements, never touch card data
+
+Required controls:
+□ Use only validated payment providers (Stripe - yes)
+□ Maintain secure network (HTTPS only - yes)
+□ Protect cardholder data (never store - yes)
+□ Maintain vulnerability management (patch regularly - yes)
+□ Implement strong access controls (MFA, RBAC - yes)
+□ Monitor networks (security logging - yes)
+□ Maintain information security policy (document below - yes)
+```
+
+PCI compliance checklist:
+```javascript
+// 1. Never log card numbers
+function logPaymentAttempt(paymentData) {
+  // WRONG: Logs full card number
+  console.log('Payment attempt:', paymentData);
+  
+  // CORRECT: Log only safe fields
+  console.log('Payment attempt:', {
+    order_id: paymentData.order_id,
+    amount: paymentData.amount,
+    last4: paymentData.card_last4, // Only last 4 digits
+    brand: paymentData.card_brand,
+    customer_email: maskEmail(paymentData.customer_email)
+  });
+}
+
+function maskEmail(email) {
+  const [local, domain] = email.split('@');
+  return local.substring(0, 2) + '***@' + domain;
+}
+
+// 2. Use Stripe.js (not raw card data)
+// CORRECT: Stripe.js handles card data
+const stripe = Stripe('pk_live_...');
+const {error, paymentMethod} = await stripe.createPaymentMethod({
+  type: 'card',
+  card: cardElement, // Stripe Element, not raw data
+  billing_details: { email: customerEmail }
+});
+
+// 3. Enforce HTTPS everywhere
+app.use((req, res, next) => {
+  if (req.headers['x-forwarded-proto'] !== 'https' && process.env.NODE_ENV === 'production') {
+    return res.redirect(301, `https://${req.headers.host}${req.url}`);
+  }
+  next();
+});
+
+// 4. Implement session timeout
+const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+
+async function validateSession(sessionToken) {
+  const session = await db.query(`
+    SELECT * FROM admin_sessions
+    WHERE session_token = $1
+      AND expires_at > NOW()
+      AND last_activity > NOW() - INTERVAL '30 minutes'
+  `, [sessionToken]);
+  
+  if (!session.rows[0]) {
+    return null;
+  }
+  
+  // Update last activity
+  await db.query(`
+    UPDATE admin_sessions SET last_activity = NOW() WHERE session_token = $1
+  `, [sessionToken]);
+  
+  return session.rows[0];
+}
+```
+
+Annual PCI compliance validation:
+```
+Timeline:
+□ Q1: Complete SAQ A questionnaire (30 minutes)
+□ Q1: Run quarterly vulnerability scan (automated, 1 hour)
+□ Q2: Review and update security policies (2 hours)
+□ Q2: Conduct internal security audit (4 hours)
+□ Q3: Run quarterly vulnerability scan (1 hour)
+□ Q3: Review access controls and permissions (2 hours)
+□ Q4: Run quarterly vulnerability scan (1 hour)
+□ Q4: Complete annual attestation of compliance (1 hour)
+
+Total annual time: ~12 hours
+Cost: $0 (Stripe provides free compliance tools)
+```
+
+8.2.2 GDPR and CCPA Compliance
+
+Data privacy requirements for customer information:
+
+Implement right to access (GDPR Article 15, CCPA):
+```javascript
+// Customer data export
+async function exportCustomerData(customerEmail) {
+  // Collect all data related to customer
+  const customerData = {
+    personal_info: await db.query(`
+      SELECT email, full_name, phone, created_at
+      FROM customers WHERE email = $1
+    `, [customerEmail]),
+    
+    orders: await db.query(`
+      SELECT order_id, created_at, total_amount, status, shipping_address
+      FROM orders WHERE customer_email = $1
+      ORDER BY created_at DESC
+    `, [customerEmail]),
+    
+    payment_methods: await db.query(`
+      SELECT brand, last4, exp_month, exp_year, created_at
+      FROM payment_methods
+      WHERE customer_id = (SELECT id FROM customers WHERE email = $1)
+    `, [customerEmail]),
+    
+    support_interactions: await db.query(`
+      SELECT created_at, subject, status, resolution
+      FROM support_tickets WHERE customer_email = $1
+    `, [customerEmail]),
+    
+    marketing_preferences: await db.query(`
+      SELECT email_marketing_opt_in, sms_opt_in, updated_at
+      FROM marketing_preferences
+      WHERE customer_id = (SELECT id FROM customers WHERE email = $1)
+    `, [customerEmail])
+  };
+  
+  // Log data access request (required for compliance)
+  await db.query(`
+    INSERT INTO data_requests (
+      customer_email, request_type, request_date, fulfilled_date
+    ) VALUES ($1, 'access', NOW(), NOW())
+  `, [customerEmail]);
+  
+  return customerData;
+}
+```
+
+Implement right to erasure (GDPR Article 17, CCPA):
+```javascript
+// Customer data deletion
+async function deleteCustomerData(customerEmail, retainForCompliance = true) {
+  const customerId = await db.query(`
+    SELECT id FROM customers WHERE email = $1
+  `, [customerEmail]);
+  
+  if (!customerId.rows[0]) {
+    throw new Error('Customer not found');
+  }
+  
+  const id = customerId.rows[0].id;
+  
+  await db.query('BEGIN');
+  
+  try {
+    if (retainForCompliance) {
+      // Anonymize rather than delete (retain for tax/accounting laws)
+      await db.query(`
+        UPDATE customers
+        SET email = 'deleted-' || id || '@anonymized.local',
+            full_name = 'DELETED USER',
+            phone = NULL,
+            anonymized_at = NOW()
+        WHERE id = $1
+      `, [id]);
+      
+      await db.query(`
+        UPDATE orders
+        SET customer_email = 'deleted-' || $1 || '@anonymized.local',
+            shipping_address = jsonb_set(
+              shipping_address,
+              '{name}',
+              '"DELETED USER"'
+            )
+        WHERE customer_email = $2
+      `, [id, customerEmail]);
+    } else {
+      // Full deletion (use carefully - may violate financial record retention laws)
+      await db.query(`DELETE FROM marketing_preferences WHERE customer_id = $1`, [id]);
+      await db.query(`DELETE FROM payment_methods WHERE customer_id = $1`, [id]);
+      await db.query(`DELETE FROM support_tickets WHERE customer_email = $1`, [customerEmail]);
+      await db.query(`DELETE FROM customers WHERE id = $1`, [id]);
+    }
+    
+    // Log deletion request
+    await db.query(`
+      INSERT INTO data_requests (
+        customer_email, request_type, request_date, fulfilled_date, retention_applied
+      ) VALUES ($1, 'erasure', NOW(), NOW(), $2)
+    `, [customerEmail, retainForCompliance]);
+    
+    await db.query('COMMIT');
+  } catch (error) {
+    await db.query('ROLLBACK');
+    throw error;
+  }
+}
+```
+
+Data retention policy:
+```sql
+-- Data retention configuration
+CREATE TABLE data_retention_policies (
+  data_type TEXT PRIMARY KEY,
+  retention_days INTEGER NOT NULL,
+  deletion_method TEXT CHECK (deletion_method IN ('hard_delete', 'anonymize', 'archive')),
+  legal_basis TEXT,
+  last_reviewed DATE
+);
+
+INSERT INTO data_retention_policies VALUES
+  ('customer_pii', 2555, 'anonymize', '7 years for tax compliance', '2025-01-01'),
+  ('order_records', 2555, 'anonymize', '7 years for accounting', '2025-01-01'),
+  ('marketing_data', 1095, 'hard_delete', '3 years for business purposes', '2025-01-01'),
+  ('system_logs', 90, 'hard_delete', 'Operational necessity only', '2025-01-01'),
+  ('support_tickets', 1825, 'anonymize', '5 years for quality assurance', '2025-01-01');
+
+-- Automated data retention enforcement
+CREATE OR REPLACE FUNCTION enforce_data_retention() RETURNS void AS $$
+DECLARE
+  policy RECORD;
+BEGIN
+  FOR policy IN SELECT * FROM data_retention_policies LOOP
+    CASE policy.data_type
+      WHEN 'system_logs' THEN
+        DELETE FROM system_logs
+        WHERE created_at < NOW() - (policy.retention_days || ' days')::INTERVAL;
+        
+      WHEN 'marketing_data' THEN
+        DELETE FROM marketing_preferences
+        WHERE updated_at < NOW() - (policy.retention_days || ' days')::INTERVAL
+          AND email_marketing_opt_in = false;
+        
+      -- Add cases for other data types
+    END CASE;
+    
+    RAISE NOTICE 'Enforced retention for %', policy.data_type;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Run monthly via cron
+-- SELECT cron.schedule('enforce-data-retention', '0 0 1 * *', 'SELECT enforce_data_retention()');
+```
+
+Privacy policy and consent management:
+```javascript
+// Track consent for data processing
+async function recordConsent(customerEmail, consentType, granted) {
+  await db.query(`
+    INSERT INTO consent_records (
+      customer_email, consent_type, granted, recorded_at, ip_address, user_agent
+    ) VALUES ($1, $2, $3, NOW(), $4, $5)
+  `, [customerEmail, consentType, granted, request.ip, request.headers['user-agent']]);
+  
+  // Update current consent status
+  await db.query(`
+    INSERT INTO current_consent (customer_email, consent_type, granted, updated_at)
+    VALUES ($1, $2, $3, NOW())
+    ON CONFLICT (customer_email, consent_type)
+    DO UPDATE SET granted = $3, updated_at = NOW()
+  `, [customerEmail, consentType, granted]);
+}
+
+// Check if customer has granted consent
+async function hasConsent(customerEmail, consentType) {
+  const result = await db.query(`
+    SELECT granted FROM current_consent
+    WHERE customer_email = $1 AND consent_type = $2
+  `, [customerEmail, consentType]);
+  
+  return result.rows[0]?.granted || false;
+}
+
+// Consent types
+const CONSENT_TYPES = {
+  MARKETING_EMAIL: 'marketing_email',
+  MARKETING_SMS: 'marketing_sms',
+  ANALYTICS: 'analytics_tracking',
+  THIRD_PARTY_SHARING: 'third_party_sharing'
+};
+```
+
+8.2.3 Regular Compliance Audits
+
+Quarterly compliance review checklist:
+```
+Security Controls Review (2 hours):
+□ Review all admin user accounts - remove inactive users
+□ Verify MFA enabled for all admin accounts
+□ Review API keys - rotate any older than 90 days
+□ Check for any plaintext passwords in code (should be zero)
+□ Review security event logs for suspicious patterns
+□ Verify all HTTPS certificates valid and not expiring soon
+□ Test backup restoration process
+
+Data Protection Review (2 hours):
+□ Verify data encryption at rest functioning
+□ Check data retention policies being enforced
+□ Review and process any pending data access requests
+□ Verify anonymization working correctly for deleted accounts
+□ Audit who has access to production database
+□ Review any third-party data processors (DPAs signed?)
+□ Test data export functionality for GDPR requests
+
+Payment Security Review (1 hour):
+□ Verify no card data stored anywhere (search logs, database)
+□ Confirm all payment processing uses Stripe tokens
+□ Check Stripe webhook signatures validated
+□ Review failed payment logs for security issues
+□ Verify PCI SAQ A still applicable (no changes to payment flow)
+
+Compliance Documentation (1 hour):
+□ Update security policies if any changes made
+□ Document any security incidents and responses
+□ Record completion of quarterly review in compliance log
+□ Schedule next quarter's review
+□ Update privacy policy if data processing changed
+
+Total quarterly time: 6 hours
