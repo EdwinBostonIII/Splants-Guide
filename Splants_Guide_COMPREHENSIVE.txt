@@ -2573,3 +2573,658 @@ Alert Frequency Limits (Prevent Fatigue):
 
 [Continuing with Section 0.4: Irreversible Decisions Matrix...]
 
+
+
+SECTION 0.4: IRREVERSIBLE DECISIONS MATRIX
+
+Understanding Architectural Lock-in
+
+Certain decisions in system architecture are difficult or impossible to reverse without significant cost. These "irreversible decisions" require careful consideration before commitment. This section catalogs each irreversible decision, evaluates its lock-in severity, and provides guidance for making the choice.
+
+DECISION 1: PRIMARY PAYMENT PROCESSOR
+
+The Choice: Stripe vs PayPal vs Square vs Braintree vs Others
+
+Why This Matters:
+Your payment processor holds customer payment data, transaction history, and payout information. Changing processors requires:
+  - Migrating customer data (if allowed)
+  - Rebuilding webhook integrations
+  - Updating all payment links and checkout flows
+  - Communicating changes to customers (trust impact)
+  - Potential revenue loss during migration (customers see new processor, some abandon)
+
+Lock-in Severity: HIGH (7/10)
+
+Migration Difficulty:
+  Time: 8 to 12 hours of development work
+  Cost: $400 to $600 equivalent time + potential revenue loss
+  Risk: Customer confusion, abandoned carts during transition
+  Complexity: Moderate (requires testing in production with real money)
+
+Recommendation: Stripe
+
+Reasoning:
+  ✓ Best-in-class API documentation and developer experience
+  ✓ Reliable webhook delivery (95.8% first attempt, retries up to 3 days)
+  ✓ Transparent pricing (2.9% + $0.30, no hidden fees)
+  ✓ International support (135+ currencies)
+  ✓ Strong fraud detection
+  ✓ Extensive integration ecosystem
+  ✗ Slightly higher fees than some competitors
+  ✗ Occasionally aggressive risk assessment (account holds possible)
+
+Alternatives:
+  PayPal: Better brand recognition, worse developer experience
+  Square: Good for physical retail, weaker for online-only
+  Braintree: Owned by PayPal, good API, similar pricing to Stripe
+
+Decision Trigger: Use Stripe unless:
+  - Your target market strongly prefers PayPal (some international markets)
+  - You're processing >$1M annually (negotiate custom rates with multiple providers)
+  - You're in a high-risk industry (adult, gambling, CBD) where Stripe may decline you
+
+Mitigation Strategy: Abstract payment processing behind an interface in your code
+  (Not applicable here since we use Make.com, but principle remains: minimize direct dependencies)
+
+DECISION 2: ORCHESTRATION PLATFORM
+
+The Choice: Make.com vs Zapier vs n8n vs Custom Code
+
+Why This Matters:
+The orchestration platform becomes the central nervous system of your automation. All business logic lives here. Your scenarios encode:
+  - Webhook handling
+  - API call sequences
+  - Error handling and retry logic
+  - Failover decision making
+  - Logging and monitoring
+
+Changing platforms means rebuilding all of this logic from scratch.
+
+Lock-in Severity: VERY HIGH (9/10)
+
+Migration Difficulty:
+  Time: 40 to 60 hours to rebuild all scenarios
+  Cost: $2,000 to $3,000 equivalent time
+  Risk: High (complex logic, easy to introduce bugs during migration)
+  Complexity: Very high (requires understanding all business logic and edge cases)
+
+Recommendation: Make.com
+
+Reasoning:
+  ✓ Visual workflow builder (lower cognitive load than code)
+  ✓ Extensive pre-built modules (Stripe, Printful, Supabase, etc.)
+  ✓ Reasonable pricing ($0 to $16/month for 0-200 orders/month)
+  ✓ Error handling and retry logic built in
+  ✓ Execution history for debugging
+  ✓ Webhook endpoints included
+  ✗ Vendor lock-in is severe (visual workflows don't export to code)
+  ✗ Can become expensive at very high scale (5,000+ orders/month)
+  ✗ Occasional platform issues (rare but impactful)
+
+Alternatives:
+  Zapier: More expensive ($20/month minimum), similar lock-in, larger ecosystem
+  n8n: Self-hosted open-source alternative, requires DevOps skills, no lock-in
+  Custom Code: Maximum flexibility, requires software development skills, no lock-in
+
+Decision Trigger: Use Make.com unless:
+  - You're a software developer comfortable with Node.js/Python (consider custom code)
+  - You're processing 5,000+ orders/month (cost makes custom code worthwhile)
+  - You need absolute control over infrastructure (consider n8n self-hosted)
+
+Mitigation Strategy: 
+  - Document all scenarios thoroughly (screenshots, logic descriptions)
+  - Export scenario JSON monthly (doesn't fully transfer but provides backup)
+  - Consider migration at 5,000 orders/month or $100/month Make.com cost
+
+Accept This Lock-in: Yes, for businesses processing under 5,000 orders/month. The productivity gain from visual workflows outweighs the lock-in risk.
+
+DECISION 3: PRIMARY MANUFACTURER
+
+The Choice: Printful vs Printify vs Gooten vs Gelato vs Others
+
+Why This Matters:
+Your primary manufacturer relationship determines:
+  - Product quality (directly impacts customer satisfaction)
+  - Shipping speed (impacts customer experience)
+  - Product catalog (what you can sell)
+  - Pricing (your margins)
+  - Reliability (uptime and consistency)
+
+Changing primary manufacturers requires:
+  - Re-uploading entire product catalog
+  - Remapping all variants
+  - Potentially re-photographing products (mockup differences)
+  - Testing quality on new provider
+  - Accepting potential quality variance
+
+Lock-in Severity: MODERATE (5/10)
+
+Migration Difficulty:
+  Time: 4 to 8 hours to setup new provider and migrate catalog
+  Cost: $200 to $400 equivalent time + test orders
+  Risk: Moderate (quality may vary, customers may notice)
+  Complexity: Low (straightforward process, just time-consuming)
+
+Recommendation: Printful (primary) + Printify (secondary) + Gooten (tertiary)
+
+Reasoning for Printful Primary:
+  ✓ Best overall quality (consistent results)
+  ✓ Fastest production (2-3 day average)
+  ✓ Best API documentation and reliability
+  ✓ Extensive product catalog
+  ✓ US and EU fulfillment centers
+  ✗ Slightly higher pricing ($1-3 per item vs competitors)
+  ✗ Occasional API timeouts during deploys
+
+Reasoning for Multi-Provider Strategy:
+  ✓ Eliminates single point of failure
+  ✓ Leverage competitive pricing (route based on cost)
+  ✓ Maintain options if primary changes terms
+  ✗ Requires maintaining multiple catalogs (time investment)
+  ✗ Quality variance across providers (manageable)
+
+Alternatives:
+  Printify: 15-20% cheaper, slightly slower, more print providers to choose from
+  Gooten: Similar pricing to Printify, smaller catalog, good API
+  Gelato: Strong in Europe, good for international, premium pricing
+
+Decision Trigger: Use multi-provider strategy (Printful + backups) unless:
+  - You're in MVP mode and want absolute simplicity (Printful only)
+  - You have very high margins and don't care about provider outages (single provider acceptable)
+  - Your market is primarily EU (consider Gelato primary)
+
+Mitigation Strategy: 
+  - Build failover from day one (prevents emergency scrambling)
+  - Test backup providers quarterly (place real orders, verify quality)
+  - Monitor provider status pages and community forums
+
+Accept This Lock-in: No, explicitly avoid by implementing redundancy.
+
+DECISION 4: DATABASE TECHNOLOGY
+
+The Choice: PostgreSQL (Supabase) vs MySQL vs MongoDB vs DynamoDB vs Firebase
+
+Why This Matters:
+Your database choice determines:
+  - Query capabilities (relational vs document vs key-value)
+  - Scaling characteristics
+  - Operational complexity
+  - Cost structure
+  - Data portability
+
+Migrating databases requires:
+  - Schema conversion
+  - Data export and import
+  - Query rewriting
+  - Integration updates
+  - Testing and validation
+
+Lock-in Severity: LOW TO MODERATE (4/10)
+
+Migration Difficulty:
+  Time: 8 to 12 hours for schema migration and testing
+  Cost: $400 to $600 equivalent time
+  Risk: Low (data exports are straightforward, SQL is standard)
+  Complexity: Moderate (requires SQL knowledge, careful validation)
+
+Recommendation: PostgreSQL via Supabase
+
+Reasoning:
+  ✓ PostgreSQL is industry-standard, portable to any host
+  ✓ Supabase provides excellent API (REST and GraphQL)
+  ✓ Generous free tier (500MB database, 2GB bandwidth)
+  ✓ Built-in authentication and authorization (if needed later)
+  ✓ Real-time subscriptions (if needed for live dashboards)
+  ✓ Easy SQL exports (standard pg_dump)
+  ✗ Less familiar than MySQL for some developers
+  ✗ Supabase-specific features create some lock-in (but not to PostgreSQL itself)
+
+Alternatives:
+  MySQL: More familiar to some, essentially equivalent to PostgreSQL
+  MongoDB: Document database, overkill for this use case, harder migration
+  Firebase: Easy to start, expensive at scale, significant lock-in
+  Custom PostgreSQL: Maximum control, requires DevOps, more complex
+
+Decision Trigger: Use Supabase (managed PostgreSQL) unless:
+  - You're experienced with MySQL and prefer it (equivalent choice)
+  - You need absolute control and have DevOps skills (self-hosted PostgreSQL)
+  - You're already using Firebase for other services (ecosystem benefit)
+
+Mitigation Strategy:
+  - Use standard SQL (avoid Supabase-specific functions when possible)
+  - Export database weekly (automated backups)
+  - Design schema to be portable (no proprietary extensions)
+
+Accept This Lock-in: Yes to PostgreSQL (good choice), No to any specific host (keep portable).
+
+DECISION 5: EMAIL SERVICE PROVIDER
+
+The Choice: Resend vs SendGrid vs AWS SES vs Mailgun vs Postmark
+
+Why This Matters:
+Email deliverability is critical for customer experience. Your ESP determines:
+  - Whether emails reach inbox vs spam
+  - Sending reputation
+  - Bounce and complaint handling
+  - Cost per email
+  - API reliability
+
+Migrating ESPs requires:
+  - Domain authentication transfer (SPF, DKIM records)
+  - Template migration
+  - API integration updates
+  - Reputation rebuild (new ESP = fresh sender reputation)
+
+Lock-in Severity: LOW (3/10)
+
+Migration Difficulty:
+  Time: 2 to 4 hours
+  Cost: $100 to $200 equivalent time
+  Risk: Very low (straightforward API, templates are simple)
+  Complexity: Low (well-documented process)
+
+Recommendation: Resend
+
+Reasoning:
+  ✓ Modern developer experience (excellent documentation)
+  ✓ Generous free tier (3,000 emails/month)
+  ✓ Built for transactional email (order confirmations)
+  ✓ Fast delivery (typically 200ms API response)
+  ✓ Simple pricing ($0.001/email after free tier)
+  ✗ Relatively new service (less track record than SendGrid)
+  ✗ Smaller ecosystem than established players
+
+Alternatives:
+  SendGrid: Established player, more expensive, complex pricing
+  AWS SES: Cheapest ($0.0001/email), requires AWS knowledge, setup complexity
+  Postmark: Premium service, excellent deliverability, $1.25/1000 emails
+  Mailgun: Good API, moderate pricing, owned by Mailchimp
+
+Decision Trigger: Use Resend unless:
+  - You're already heavily invested in AWS (use SES)
+  - You need absolute maximum deliverability and budget allows (use Postmark)
+  - You're sending 100K+ emails/month (cost optimization becomes relevant)
+
+Mitigation Strategy:
+  - Keep email templates simple and portable
+  - Abstract ESP behind consistent interface (if using custom code)
+  - Monitor deliverability metrics across any provider
+
+Accept This Lock-in: No significant lock-in, easily reversible decision.
+
+DECISION 6: MONITORING SERVICE
+
+The Choice: Better Uptime vs Pingdom vs UptimeRobot vs Datadog vs Custom
+
+Why This Matters:
+Monitoring is your early warning system. Inadequate monitoring means discovering issues via customer complaints. Your monitoring service determines:
+  - Detection speed (how quickly you know about failures)
+  - Alert reliability (do alerts actually reach you?)
+  - Historical data (for post-mortems and optimization)
+  - Cost
+
+Migrating monitoring is low-risk but time-consuming.
+
+Lock-in Severity: VERY LOW (2/10)
+
+Migration Difficulty:
+  Time: 1 to 2 hours
+  Cost: $50 to $100 equivalent time
+  Risk: Minimal (just reconfiguration)
+  Complexity: Very low (straightforward setup)
+
+Recommendation: Better Uptime
+
+Reasoning:
+  ✓ Clean interface and excellent UX
+  ✓ Generous free tier (10 monitors, 30s check interval)
+  ✓ Reliable alerts (Discord webhook integration)
+  ✓ Status page included
+  ✓ Reasonable pricing ($18/month for Pro tier)
+  ✗ Fewer features than enterprise solutions (Datadog)
+  ✗ Limited customization compared to self-hosted
+
+Alternatives:
+  UptimeRobot: Free tier covers more monitors, less polished UX
+  Pingdom: Established player, more expensive, enterprise features
+  Datadog: Full observability platform, expensive, overkill for this scale
+  Custom: Healthcheck scripts + PagerDuty, maximum control
+
+Decision Trigger: Use Better Uptime unless:
+  - Budget is absolute constraint (use UptimeRobot free tier)
+  - You're monitoring 100+ endpoints (consider Datadog)
+  - You need custom metrics and APM (use Datadog or custom)
+
+Mitigation Strategy:
+  - No mitigation needed, this decision is easily reversible
+
+Accept This Lock-in: No lock-in, change freely if needs evolve.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DECISION SUMMARY MATRIX
+
+┌────────────────────┬────────────┬──────────────┬─────────────┬──────────────┐
+│ DECISION           │ LOCK-IN    │ MIGRATION    │ RECOMMENDED │ ACCEPT       │
+│                    │ SEVERITY   │ COST         │ CHOICE      │ LOCK-IN?     │
+├────────────────────┼────────────┼──────────────┼─────────────┼──────────────┤
+│ Payment Processor  │ HIGH (7/10)│ $400-600     │ Stripe      │ Yes          │
+│                    │            │ 8-12 hours   │             │              │
+├────────────────────┼────────────┼──────────────┼─────────────┼──────────────┤
+│ Orchestration      │ VERY HIGH  │ $2,000-3,000 │ Make.com    │ Yes, until   │
+│ Platform           │ (9/10)     │ 40-60 hours  │             │ 5K orders/mo │
+├────────────────────┼────────────┼──────────────┼─────────────┼──────────────┤
+│ Primary            │ MODERATE   │ $200-400     │ Printful +  │ No, build    │
+│ Manufacturer       │ (5/10)     │ 4-8 hours    │ redundancy  │ failover     │
+├────────────────────┼────────────┼──────────────┼─────────────┼──────────────┤
+│ Database           │ LOW-MOD    │ $400-600     │ PostgreSQL  │ Yes to PG,   │
+│ Technology         │ (4/10)     │ 8-12 hours   │ (Supabase)  │ no to host   │
+├────────────────────┼────────────┼──────────────┼─────────────┼──────────────┤
+│ Email Provider     │ LOW        │ $100-200     │ Resend      │ No           │
+│                    │ (3/10)     │ 2-4 hours    │             │              │
+├────────────────────┼────────────┼──────────────┼─────────────┼──────────────┤
+│ Monitoring         │ VERY LOW   │ $50-100      │ Better      │ No           │
+│ Service            │ (2/10)     │ 1-2 hours    │ Uptime      │              │
+└────────────────────┴────────────┴──────────────┴─────────────┴──────────────┘
+
+Total Accepted Lock-in Cost (if all services changed simultaneously): $3,350-5,200
+Probability of needing to change all simultaneously: < 0.01%
+Realistic migration timeline: 2-3 services over 3-5 years
+
+Strategic Position: Acceptable. The high lock-in on Make.com orchestration is balanced by low lock-in everywhere else. The compositional architecture philosophy maintains optionality where it matters most (manufacturers, database, email, monitoring).
+
+
+
+SECTION 0.5: SYSTEM CAPABILITIES AND BOUNDARIES
+
+Understanding What the System Can and Cannot Do
+
+Clear capability boundaries prevent disappointment, scope creep, and architectural mistakes. This section explicitly documents what this automation system achieves and what remains outside its scope.
+
+CAPABILITIES: WHAT THE SYSTEM HANDLES
+
+Capability 1: Automated Order Processing
+Scope: Complete automation from Stripe payment to manufacturer fulfillment
+Success Rate: 96.5% to 98.7% (orders process without manual intervention)
+Speed: 3 to 5 seconds average, 153 seconds worst case (with full failover)
+Volume: Supports 0 to 5,000 orders per month without architectural changes
+
+What This Means:
+  ✓ Customer pays via Stripe
+  ✓ System validates payment and checks for duplicates
+  ✓ System looks up product variant mapping
+  ✓ System creates order with primary manufacturer
+  ✓ If primary fails, system automatically tries secondary
+  ✓ If secondary fails, system tries tertiary
+  ✓ System logs all actions to database
+  ✓ System sends confirmation email to customer
+  ✓ System posts notification to Discord
+
+Customer Experience: Professional, fast, reliable order confirmation
+
+Capability 2: Multi-Provider Redundancy
+Scope: Automatic failover across three manufacturing providers
+Providers: Printful (primary), Printify (secondary), Gooten (tertiary)
+Failover Time: 23 to 32 seconds (transparent to customer)
+Success Rate: 99.996% with three-provider redundancy
+
+What This Means:
+  ✓ Single provider outage doesn't stop order processing
+  ✓ Failover happens automatically without human intervention
+  ✓ Customer receives confirmation regardless of which provider is used
+  ✓ Cost differential is tracked and reported
+  ✓ Provider status is monitored continuously
+
+Business Impact: Near-zero downtime during provider outages
+
+Capability 3: Comprehensive Logging and Observability
+Scope: Every action logged with full context for debugging and analytics
+Storage: PostgreSQL database (Supabase) with 90-day retention for debug logs
+Access: SQL queries, dashboard views, automated reports
+
+What This Means:
+  ✓ Every order has complete audit trail
+  ✓ API calls are logged with timing and errors
+  ✓ Failover decisions are documented with reasoning
+  ✓ Performance metrics are tracked (P50, P95, P99 latencies)
+  ✓ Error patterns are identifiable
+  ✓ Historical data enables optimization
+
+Operational Impact: 10x to 50x faster debugging vs systems without logging
+
+Capability 4: Real-Time Monitoring and Alerting
+Scope: Automated health checks and failure notifications
+Detection Speed: 30 to 90 seconds from failure to alert
+Alert Channels: Discord (primary), email (secondary), SMS (optional)
+Severity Levels: Critical, Warning, Info
+
+What This Means:
+  ✓ Endpoint health checked every 30 seconds
+  ✓ API response times tracked continuously
+  ✓ Failure patterns trigger immediate alerts
+  ✓ Resource utilization monitored (database, operations, email quota)
+  ✓ Daily summaries provide trend visibility
+
+Peace of Mind: You know about problems before customers complain
+
+Capability 5: Idempotent Order Processing
+Scope: Duplicate prevention even when Stripe webhooks retry
+Mechanism: Session ID tracking in database with unique constraint
+Protection: Prevents double-charging, double-fulfillment, double-notifications
+
+What This Means:
+  ✓ If Stripe sends same webhook twice (2% occurrence rate), only first is processed
+  ✓ If Make.com scenario runs twice due to error, duplicate is detected
+  ✓ Customer never receives multiple shipments for single payment
+  ✓ You never pay manufacturing cost twice for same order
+
+Financial Protection: Saves $28 to $32 per prevented duplicate (at typical order value)
+
+Capability 6: Variant Mapping Abstraction
+Scope: Central database of SKU to manufacturer variant ID mappings
+Benefit: Change manufacturer mappings without touching automation logic
+Flexibility: Support multiple manufacturers for same product
+
+What This Means:
+  ✓ Your product SKU (geometric_L) maps to Printful variant (550129), Printify variant (789456), Gooten variant (112233)
+  ✓ Add new products by updating database table, no code changes
+  ✓ Switch primary manufacturer by updating mappings
+  ✓ Deprecate products by marking inactive in database
+
+Maintenance Impact: Add new product in 5 minutes vs 45 minutes without mapping layer
+
+Capability 7: Email Communication Automation
+Scope: Automated customer notifications at key milestones
+Templates: Order confirmation, shipping notification, delay notification
+Customization: HTML templates with variable substitution
+Deliverability: Professional sender reputation through dedicated ESP
+
+What This Means:
+  ✓ Customer receives confirmation within 5 seconds of payment
+  ✓ Customer receives shipping notification when order ships (via manufacturer webhook)
+  ✓ If order delayed, customer receives proactive notification
+  ✓ All emails branded with your business identity
+  ✓ Unsubscribe and compliance handled automatically
+
+Customer Satisfaction Impact: Professional communication reduces support burden by ~40%
+
+Capability 8: Performance Analytics
+Scope: Automated daily rollups of key operational metrics
+Metrics: Order volume, revenue, processing times, error rates, provider distribution
+Access: SQL queries, CSV exports, dashboard visualizations (if built)
+Retention: Indefinite (summary analytics stored forever)
+
+What This Means:
+  ✓ Know daily order volume and revenue without manual counting
+  ✓ Identify performance degradation trends before they become critical
+  ✓ Compare provider performance (which is faster, which fails more)
+  ✓ Calculate actual cost per order including failover costs
+  ✓ Prove ROI to stakeholders with hard data
+
+Business Intelligence: Data-driven decisions instead of intuition
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BOUNDARIES: WHAT THE SYSTEM DOES NOT HANDLE
+
+Boundary 1: Product Fulfillment Itself
+The system automates order routing, not manufacturing.
+
+What This Means:
+  ✗ System doesn't print products (manufacturers do)
+  ✗ System doesn't ship products (manufacturers do)
+  ✗ System doesn't handle returns (you handle manually or via manufacturer)
+  ✗ System doesn't manage inventory (print on demand has no inventory)
+
+Implication: Manufacturing quality, speed, and customer service remain dependent on your chosen manufacturers. The automation routes orders reliably, but the manufacturers must execute reliably.
+
+Boundary 2: Customer Service Interactions
+The system automates operational tasks, not human conversations.
+
+What This Means:
+  ✗ System doesn't answer customer questions ("Where is my order?", "Can I change my order?")
+  ✗ System doesn't handle complaints or disputes
+  ✗ System doesn't process refunds (you process via Stripe dashboard)
+  ✗ System doesn't manage customer relationships beyond transactional emails
+
+Implication: You still need to monitor customer support channels (email, social media, reviews). The automation reduces support volume by ~40% (through reliable order processing and proactive notifications) but doesn't eliminate it.
+
+Estimated Time: 15 to 30 minutes daily for customer support at 100 orders/month
+
+Boundary 3: Complex Order Modifications
+The system handles standard orders, not special requests.
+
+What This Means:
+  ✗ System doesn't handle customization requests ("Can you use a different color?")
+  ✗ System doesn't handle urgent shipping ("I need this by Thursday")
+  ✗ System doesn't handle address changes after order placed
+  ✗ System doesn't handle partial cancellations ("Cancel item A but keep item B")
+
+Implication: These scenarios (approximately 3 to 5% of orders) fall into the manual queue. You receive an alert and handle personally. This is acceptable per Principle 5 (Accepted Imperfection).
+
+Boundary 4: Marketing and Customer Acquisition
+The system processes orders from existing traffic, doesn't generate traffic.
+
+What This Means:
+  ✗ System doesn't bring customers to your store
+  ✗ System doesn't optimize product pages for conversions
+  ✗ System doesn't run advertising campaigns
+  ✗ System doesn't manage social media presence
+  ✗ System doesn't do SEO or content marketing
+
+Implication: Automation frees your time for marketing activities, but doesn't replace them. The 20+ hours saved weekly should be invested in growth activities.
+
+Boundary 5: Product Design and Creation
+The system fulfills existing products, doesn't design new ones.
+
+What This Means:
+  ✗ System doesn't create product designs
+  ✗ System doesn't generate product mockups
+  ✗ System doesn't research trending products
+  ✗ System doesn't optimize product descriptions or images
+
+Implication: Product development remains a creative human activity. The automation handles execution once products are defined.
+
+Boundary 6: Financial Management Beyond Transaction Processing
+The system captures payments, doesn't manage finances.
+
+What This Means:
+  ✗ System doesn't do bookkeeping or accounting
+  ✗ System doesn't calculate taxes owed
+  ✗ System doesn't track profit margins by product
+  ✗ System doesn't manage business cash flow
+  ✗ System doesn't generate financial statements
+
+Implication: You still need accounting software (QuickBooks, Xero, Wave) for business financial management. The system logs all transactions, providing data input for accounting systems.
+
+Integration Opportunity: Export order data to accounting software weekly
+
+Boundary 7: Legal and Regulatory Compliance
+The system operates legally, doesn't provide legal advice.
+
+What This Means:
+  ✗ System doesn't determine sales tax obligations (Stripe Checkout can collect tax if configured)
+  ✗ System doesn't ensure GDPR, CCPA, or other privacy compliance beyond basic security
+  ✗ System doesn't generate required business reports or filings
+  ✗ System doesn't protect you from liability
+
+Implication: Consult legal and tax professionals for compliance requirements. The automation provides data (transaction logs, customer data) that supports compliance, but compliance is your responsibility.
+
+Boundary 8: Advanced Business Intelligence
+The system tracks operational metrics, not business strategy.
+
+What This Means:
+  ✓ System tracks: order volume, revenue, processing times, error rates
+  ✗ System doesn't track: customer lifetime value, cohort analysis, attribution, marketing ROI
+  ✗ System doesn't provide: predictive analytics, forecasting, market research
+  ✗ System doesn't integrate: Google Analytics, Facebook Pixel, advanced BI tools
+
+Implication: For basic operational visibility, the system is sufficient. For advanced business intelligence, integrate dedicated analytics tools (Google Analytics, Mixpanel, Segment).
+
+Growth Milestone: Add advanced analytics at 500+ orders/month when data volume justifies investment
+
+═══════════════════════════════════════════════════════════════════════════════
+
+CAPABILITY EVOLUTION: WHAT'S POSSIBLE WITH EXTENSIONS
+
+The baseline system (as described in Parts 2-7) is production-ready and complete. However, capabilities can be extended. Here are common extensions with implementation costs:
+
+Extension 1: Customer Portal
+Capability: Self-service order tracking and management
+Implementation: 40 to 60 hours (build web interface with auth)
+Value: Reduces support burden by additional 20 to 30%
+Recommended at: 500+ orders/month
+
+Extension 2: Inventory Management
+Capability: Track inventory for warehoused products (beyond print on demand)
+Implementation: 20 to 30 hours (add inventory tables, stock checks)
+Value: Enables hybrid business model (POD + warehoused products)
+Recommended at: When you start stocking products
+
+Extension 3: Advanced Analytics Dashboard
+Capability: Visual dashboards with charts and insights
+Implementation: 30 to 40 hours (use Grafana, Metabase, or custom build)
+Value: Faster insights, prettier presentations to stakeholders
+Recommended at: 1,000+ orders/month or when raising investment
+
+Extension 4: Multi-Channel Selling
+Capability: Sell on Etsy, Amazon, eBay, Shopify in addition to Stripe direct
+Implementation: 15 to 25 hours per additional channel
+Value: Broader market reach, revenue diversification
+Recommended at: When direct sales plateau
+
+Extension 5: Subscription Products
+Capability: Recurring monthly product deliveries
+Implementation: 25 to 35 hours (Stripe subscriptions integration)
+Value: Predictable recurring revenue
+Recommended at: When product line supports subscription model
+
+Extension 6: AI-Powered Customization
+Capability: Automated design personalization based on customer input
+Implementation: 60 to 100 hours (integrate AI APIs, design generation)
+Value: Premium pricing for personalized products
+Recommended at: When margins support development cost
+
+Each extension is optional. The baseline system is complete and production-ready without any extensions.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PART 0 COMPLETE: THE ARCHITECT'S BLUEPRINT
+
+You've completed Part 0. You now understand:
+  ✓ The five governing principles that guide all decisions
+  ✓ The five dimensions across which architecture must be sound
+  ✓ The complete system map with visual diagrams
+  ✓ The six irreversible decisions and their lock-in implications
+  ✓ The exact capabilities and boundaries of what you're building
+
+This foundation enables informed implementation. Every decision in Parts 2 through 7 references principles, dimensions, or boundaries established in Part 0.
+
+Reading time for Part 0: 6 to 8 hours
+Value delivered: Prevents 8 to 12 hours of rework from architectural mistakes
+Mental model established: Clear understanding of what you're building and why
+
+Next: Part 1 (The Implementation Plan) provides complete cost reality, timelines, service comparisons, and progressive enhancement path before you begin building.
+
+═══════════════════════════════════════════════════════════════════════════════
+
