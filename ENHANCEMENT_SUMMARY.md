@@ -238,7 +238,9 @@ Each decision includes:
 - Real world examples: Minimal → 8+ with specific dates
 
 ### Qualitative Improvements
-- **Tone**: Brutal veteran warnings → Experienced architect guidance
+- **Tone**: no emoticons. supportive and patient without being condescending
+- **Clarity**: vague warnings → precise explanations and justifications
+- **Depth**: high-level overviews → exhaustive multi-dimensional analysis
 - **Examples**: Generic → Specific (dates, costs, times, probabilities)
 - **Analysis**: Surface → Deep (5-dimensional architecture analysis)
 - **Decisions**: Implicit → Explicit (decision frameworks for every choice)
