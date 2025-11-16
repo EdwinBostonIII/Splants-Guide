@@ -3050,6 +3050,72 @@ Build them when you have 1,000+ orders monthly and actual statistical power.
 
 Until then: Manual review beats algorithms.
 
+THE NOTIFICATION INTELLIGENCE SYSTEM
+
+What deserves immediate notification vs daily summary:
+
+IMMEDIATE (Discord webhook):
+├─ Order over $150 (unusual, might be fraud)
+├─ 3+ orders from same IP in 1 hour
+├─ Printful API errors (needs immediate failover)
+├─ Database connection failures
+└─ Chargeback received
+
+HOURLY (batched):
+├─ Orders without shipping updates >48 hours
+├─ Emails bounced
+├─ Inventory warnings
+└─ Provider response time degradation
+
+DAILY (morning report):
+├─ Revenue summary
+├─ Anomaly detection
+├─ Pattern analysis
+├─ Inventory projections
+└─ Customer segment changes
+
+Implementation priority:
+
+Daily report (2 hours, immediate value)
+Immediate alerts (1 hour, critical)
+Hourly batches (skip until 200+ orders per month)
+
+THE FEATURES THAT SOUND SMART BUT AREN'T
+
+"AI powered pricing optimization"
+├─ Needs 10,000+ transactions for statistical significance
+├─ You have 100 per month
+└─ Verdict: Waste of time
+
+"Sentiment analysis on customer emails"
+├─ You get 8 customer emails per month
+├─ 6 are "where's my order"
+└─ Verdict: Read them yourself
+
+"Predictive customer lifetime value"
+├─ Requires cohort analysis over 12+ months
+├─ Your business is 3 months old
+└─ Verdict: Check back in year 2
+
+"Automated social media responses"
+├─ Setup time: 8 hours
+├─ Queries handled well: "What sizes?" "How to order?"
+├─ Everything else makes you look robotic
+└─ Verdict: Template responses better
+
+WHAT ACTUALLY MOVES THE NEEDLE
+
+Fraud detection (saves money immediately)
+Daily intelligence report (focuses your attention)
+Smart alerting (catches problems early)
+Basic segmentation (after 6 months data)
+
+Total useful implementation: 8 hours
+Total time you'll spend on AI features: 20 hours
+Features you'll actually use: 40%
+
+This ratio is normal and acceptable
+
 PART 3 VERDICT
 
 Intelligence layer at small scale: Mostly waste.
@@ -3061,3 +3127,293 @@ Revisit when you have real volume.
 ═══════════════════════════════════════════════════════════════════════════════
 
 End of Part 3 Intelligence Layer
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PART 4: DATA AND ANALYTICS INFRASTRUCTURE
+
+Reading time: 35 minutes
+Implementation time: 6 hours for basic, 12 hours if you catch optimization addiction
+Cost: See Part 1 (Supabase free tier until 1,100 orders per day)
+
+THE SCHEMA THAT MATTERS
+
+You design normalized database schema with 15 tables. You implement foreign keys, indices, views. Three months later you query two tables: orders and customers. The other 13 tables contain 0 rows.
+
+Start with these 3 tables. Add others when actually needed.
+
+TABLE 1: orders
+
+```sql
+CREATE TABLE orders (
+  id SERIAL PRIMARY KEY,
+  stripe_session_id VARCHAR(255) UNIQUE NOT NULL,  -- Idempotency key
+  customer_email VARCHAR(255) NOT NULL,
+  total_amount DECIMAL(10,2) NOT NULL,
+  currency VARCHAR(3) DEFAULT 'USD',
+  order_status VARCHAR(50) DEFAULT 'processing',
+
+  -- Metadata from Stripe
+  size VARCHAR(10),
+  design VARCHAR(100),
+  rush BOOLEAN DEFAULT false,
+  gift_message TEXT,
+
+  -- Shipping details
+  shipping_name VARCHAR(255),
+  shipping_address1 VARCHAR(255),
+  shipping_address2 VARCHAR(255),
+  shipping_city VARCHAR(100),
+  shipping_state VARCHAR(50),
+  shipping_zip VARCHAR(20),
+  shipping_country VARCHAR(2),
+
+  -- Fulfillment tracking
+  manufacturer VARCHAR(50),  -- 'printful', 'printify', 'gooten'
+  manufacturer_order_id VARCHAR(100),
+  tracking_number VARCHAR(100),
+  tracking_carrier VARCHAR(50),
+  shipped_at TIMESTAMP,
+  delivered_at TIMESTAMP,
+
+  -- Timestamps
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes that actually matter
+CREATE INDEX idx_orders_customer_email ON orders(customer_email);
+CREATE INDEX idx_orders_created_at ON orders(created_at DESC);
+CREATE INDEX idx_orders_status ON orders(order_status);
+CREATE INDEX idx_orders_stripe_session ON orders(stripe_session_id);
+```
+
+TABLE 2: events (for debugging when shit breaks)
+
+```sql
+CREATE TABLE events (
+  id SERIAL PRIMARY KEY,
+  order_id INTEGER REFERENCES orders(id),
+  event_type VARCHAR(50) NOT NULL,  -- 'webhook_received', 'api_call', 'error'
+  source VARCHAR(50),  -- 'stripe', 'printful', 'make.com'
+  status VARCHAR(20),  -- 'success', 'failure', 'retry'
+  request_data JSONB,
+  response_data JSONB,
+  error_message TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_events_order_id ON events(order_id);
+CREATE INDEX idx_events_type ON events(event_type);
+CREATE INDEX idx_events_created_at ON events(created_at DESC);
+```
+
+TABLE 3: analytics_cache (because real time aggregation is slow)
+
+```sql
+CREATE TABLE analytics_cache (
+  date DATE PRIMARY KEY,
+  total_orders INTEGER DEFAULT 0,
+  total_revenue DECIMAL(10,2) DEFAULT 0,
+  avg_order_value DECIMAL(10,2) DEFAULT 0,
+
+  -- Provider breakdown
+  printful_orders INTEGER DEFAULT 0,
+  printify_orders INTEGER DEFAULT 0,
+  gooten_orders INTEGER DEFAULT 0,
+
+  -- Status breakdown
+  processing_count INTEGER DEFAULT 0,
+  shipped_count INTEGER DEFAULT 0,
+  delivered_count INTEGER DEFAULT 0,
+  failed_count INTEGER DEFAULT 0,
+
+  -- Performance metrics
+  avg_processing_time_hours DECIMAL(5,2),
+  avg_delivery_time_days DECIMAL(4,2),
+
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+Tables you think you need but don't:
+├─ products (you have 3 designs, not 300)
+├─ inventory (Printful handles this)
+├─ customers (just query orders table)
+├─ shipping_zones (overkill)
+└─ tax_rates (Stripe handles this)
+
+THE QUERIES YOU'LL ACTUALLY RUN
+
+Query 1: Daily Revenue (you'll check this obsessively)
+
+```sql
+SELECT
+  DATE(created_at) as date,
+  COUNT(*) as orders,
+  SUM(total_amount) as revenue,
+  AVG(total_amount) as avg_order
+FROM orders
+WHERE created_at >= NOW() - INTERVAL '30 days'
+GROUP BY DATE(created_at)
+ORDER BY date DESC;
+```
+
+Query 2: Where's My Order (customer asks daily)
+
+```sql
+SELECT
+  order_status,
+  manufacturer,
+  manufacturer_order_id,
+  tracking_number,
+  shipped_at,
+  delivered_at
+FROM orders
+WHERE customer_email = 'customer@example.com'
+ORDER BY created_at DESC
+LIMIT 5;
+```
+
+Query 3: The Reconciliation Query (Friday afternoon ritual)
+
+```sql
+WITH stripe_totals AS (
+  SELECT
+    DATE(created_at) as date,
+    COUNT(*) as stripe_orders,
+    SUM(total_amount) as stripe_revenue
+  FROM orders
+  WHERE created_at >= NOW() - INTERVAL '7 days'
+  GROUP BY DATE(created_at)
+),
+fulfilled_totals AS (
+  SELECT
+    DATE(created_at) as date,
+    COUNT(*) as fulfilled_orders
+  FROM orders
+  WHERE manufacturer_order_id IS NOT NULL
+    AND created_at >= NOW() - INTERVAL '7 days'
+  GROUP BY DATE(created_at)
+)
+SELECT
+  s.date,
+  s.stripe_orders,
+  f.fulfilled_orders,
+  s.stripe_orders - COALESCE(f.fulfilled_orders, 0) as unfulfilled
+FROM stripe_totals s
+LEFT JOIN fulfilled_totals f ON s.date = f.date
+ORDER BY s.date DESC;
+```
+
+Query 4: The Panic Query (when something seems broken)
+
+```sql
+SELECT
+  event_type,
+  source,
+  status,
+  COUNT(*) as count,
+  MAX(created_at) as last_occurrence
+FROM events
+WHERE created_at >= NOW() - INTERVAL '1 hour'
+  AND status = 'failure'
+GROUP BY event_type, source, status
+ORDER BY count DESC;
+```
+
+PERFORMANCE REALITY AT SCALE
+
+```
+┌──────────────────────────────────────────────────────┐
+│ Orders │ Query Time │ Index Size │ Monthly Cost      │
+├────────┼────────────┼────────────┼───────────────────┤
+│ 1K     │ <100ms     │ 2MB        │ $0 (free tier)    │
+│ 10K    │ <200ms     │ 20MB       │ $0 (free tier)    │
+│ 50K    │ <500ms     │ 100MB      │ $0 (free tier)    │
+│ 100K   │ 1 to 2s    │ 200MB      │ $25 (need Pro)    │
+│ 500K   │ 3 to 5s    │ 1GB        │ $25 (Pro tier)    │
+│ 1M     │ 8 to 12s   │ 2GB        │ $125 (Team tier)  │
+└──────────────────────────────────────────────────────┘
+```
+
+When to add optimizations:
+├─ Under 10K orders: Don't optimize anything
+├─ 10K to 50K: Add analytics_cache table
+├─ 50K to 100K: Partition orders by month
+├─ 100K+: Consider TimescaleDB
+└─ 1M+: You need a data engineer
+
+THE BACKUP STRATEGY NOBODY IMPLEMENTS
+
+Until you lose data. Then you implement it.
+
+Daily backup automation (15 minutes to setup):
+
+```sql
+-- Supabase dashboard > SQL Editor > New Query
+SELECT cron.schedule(
+  'daily-backup',
+  '0 3 * * *',  -- 3 AM daily
+  $$
+  COPY (SELECT * FROM orders WHERE created_at >= NOW() - INTERVAL '1 day')
+  TO '/backups/orders_' || TO_CHAR(NOW(), 'YYYY_MM_DD') || '.csv'
+  WITH CSV HEADER;
+  $$
+);
+```
+
+Actually, Supabase does automatic backups. But you'll setup manual ones anyway because trust requires redundancy.
+
+Manual backup ritual (you'll do this weekly):
+
+Export orders table to CSV
+Save to Google Drive with date
+Feel safer
+Never need these backups
+Continue doing it anyway
+
+MONITORING THAT ACTUALLY HELPS
+
+Database alerts to configure:
+
+CRITICAL (immediate Discord ping):
+├─ Connection pool >80% utilized
+├─ Disk usage >90%
+├─ Any query taking >10 seconds
+└─ Replication lag >1 minute
+
+WARNING (daily summary):
+├─ Table size growing >20% weekly
+├─ Slow query count increasing
+├─ Index bloat >30%
+└─ Cache hit ratio <95%
+
+Supabase dashboard metrics to check weekly:
+├─ Database size (approaching limit?)
+├─ Connection count (spikes = problem)
+├─ Query performance (degrading?)
+└─ Cache hit ratio (should be >95%)
+
+THE ANALYTICS DASHBOARD REALITY
+
+You spend 8 hours building beautiful dashboard. Charts, graphs, KPIs. You check it daily for a week. Weekly for a month. Then never again.
+
+What you actually check:
+├─ Revenue number (the only metric that matters)
+├─ Unfulfilled orders count
+├─ Last error timestamp
+└─ Customer email search
+
+Skip the fancy visualizations. Build simple queries. Save 6 hours.
+
+Total essential implementation: 6 hours
+Total time you'll spend: 12 hours (optimization addiction)
+Dashboards built: 3
+Dashboards used after month 2: 0
+
+Accepting this waste: Part of learning
+
+═══════════════════════════════════════════════════════════════════════════════
+
+End of Part 4 Data and Analytics Infrastructure
