@@ -9,5 +9,9 @@
     "python.testing.pytestEnabled": false,
     "python.testing.unittestEnabled": true,
     "chatgpt.runCodexInWindowsSubsystemForLinux": true,
-    "remote.WSL.experimental.scriptLessStartup": true
+    "remote.WSL.experimental.scriptLessStartup": true,
+    "files.autoSave": "afterDelay",
+    "editor.aiStats.enabled": true,
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.pythonProjects": []
 }
