@@ -1,0 +1,521 @@
+SPLANTS GUIDE STYLE AND FORMATTING RULES
+Quick Reference for Consistent Writing
+═══════════════════════════════════════════════════════════════════════════════
+
+CRITICAL FORMATTING RULES
+
+1. NO EM-DASHES IN BODY TEXT
+   ❌ Wrong: "The system processes orders—automatically and reliably—without..."
+   ✓ Right: "The system processes orders (automatically and reliably) without..."
+   ✓ Right: "The system processes orders: automatically and reliably, without..."
+
+2. NO BODY-TEXT HYPHENS (surrounded by spaces)
+   ❌ Wrong: "Make.com is easy - just connect the modules"
+   ✓ Right: "Make.com is easy, just connect the modules"
+   ✓ Right: "Make.com is easy. Just connect the modules"
+   ✓ Right: "Make.com is easy: just connect the modules"
+
+3. HYPHENS ARE OK IN:
+   ✓ Compound words: "production-ready", "server-side", "real-time"
+   ✓ Code blocks: any hyphen usage in code is fine
+   ✓ URLs: https://example.com/my-page
+   ✓ File paths: /path/to/my-file.txt
+   ✓ ASCII diagrams: ─── ├── └── etc.
+   ✓ Ranges: "4-6 hours", "10-15 minutes"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PUNCTUATION REPLACEMENTS
+
+Replace em-dashes and body hyphens with:
+
+COLON (:)
+  Use for: Introducing lists, examples, or explanations
+  Example: "Three steps required: validation, processing, confirmation"
+
+COMMA (,)
+  Use for: Separating clauses or adding information
+  Example: "The system validates data, then processes the order"
+
+PERIOD (.)
+  Use for: Separating independent thoughts into sentences
+  Example: "First validate. Then process. Finally confirm."
+
+PARENTHESES ()
+  Use for: Clarifying or adding supplementary information
+  Example: "The webhook (sent by Stripe) contains order data"
+
+SEMICOLON (;)
+  Use for: Connecting related independent clauses
+  Example: "Printful is fastest; Printify is cheapest; Gooten is backup"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+ASCII DIAGRAM USAGE
+
+WHEN TO USE DIAGRAMS:
+
+✓ System architecture (show components and connections)
+✓ Data flow (show information movement)
+✓ Decision logic (show if/then branching)
+✓ Hierarchies (show parent/child relationships)
+✓ Timelines (show sequential events)
+✓ Comparisons (show side-by-side differences)
+
+DIAGRAM PLACEMENT:
+
+• After introducing a complex concept
+• Before detailed step-by-step instructions
+• When verbal description would take 3+ paragraphs
+• At section starts (overview diagrams)
+• In troubleshooting sections (decision trees)
+
+DIAGRAM FREQUENCY:
+
+• Minimum: 1 diagram per major section (2.1, 2.2, 2.3, etc.)
+• Recommended: 2-3 diagrams per major section
+• Maximum: Use judgment (too many reduces impact)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+VISUAL FLOURISH USAGE
+
+SECTION SEPARATORS:
+
+Major section break:
+═══════════════════════════════════════════════════════════════════════════════
+
+Minor section break:
+───────────────────────────────────────────────────────────────────────────────
+
+BOXES:
+
+Critical information (use sparingly):
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  CRITICAL: This information prevents costly mistakes                     ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+Warning (use for actual risks):
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ⚠ WARNING: Skipping this step causes [specific bad outcome]                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+General information box:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ TIME REALITY CHECK / COST IMPACT / PRODUCTION REALITY                      │
+│                                                                             │
+│ [Content with specific data and examples]                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+FREQUENCY GUIDELINES:
+
+• CRITICAL boxes: 1-2 per section (only for critical info)
+• WARNING boxes: 2-3 per section (only for real risks)
+• Information boxes: 3-5 per section (Time, Cost, Production Reality)
+• Use boxes to highlight, not as default formatting
+
+═══════════════════════════════════════════════════════════════════════════════
+
+CONTENT STRUCTURE RULES
+
+SECTION OPENING (every major section):
+
+1. Quick Jump Menu (navigation aid)
+2. Time Reality Box (set expectations)
+3. Overview (what this section accomplishes)
+4. Success Metrics (measurable outcomes)
+
+SECTION BODY (step-by-step):
+
+1. Subsection title
+2. Why This Matters (5-dimension explanation for major decisions)
+3. Implementation Steps (numbered, with time estimates)
+4. Validation Checkpoint (verify success)
+5. Testing Procedures (confirm it works)
+6. Production Reality Box (what actually happens)
+
+SECTION CLOSING (every major section):
+
+1. Milestone Achievement Box (celebrate progress)
+2. Summary of capabilities gained
+3. Problems prevented (with cost savings)
+4. Next Steps (where to go from here)
+5. Confidence Check (before moving on checklist)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WRITING TONE AND STYLE
+
+VOICE: Experienced architect sharing hard-won knowledge
+
+✓ DO:
+  • Use specific numbers: "2.3% failure rate" not "occasional failures"
+  • Include time estimates: "30 minutes" not "a little while"
+  • Specify costs: "$15-30 per incident" not "some money"
+  • Share real metrics: "96.3% success rate" not "usually works"
+  • Explain trade-offs: "Faster but costs 10% more"
+  • Provide context: Why this decision matters in 5 dimensions
+
+✗ DON'T:
+  • Use uncertainty: "might", "probably", "should work"
+  • Be vague: "several", "many", "a few"
+  • Skip the why: Don't just say what to do, explain why
+  • Assume knowledge: Define terms on first use
+  • Hide problems: Show real failure rates and costs
+
+CONFIDENCE LEVEL:
+
+Replace uncertain language with statistical confidence:
+  ❌ "This might prevent duplicates"
+  ✓ "This prevents duplicates in 100% of tested scenarios"
+
+Replace vague descriptions with measurements:
+  ❌ "This takes a while to set up"
+  ✓ "This takes 4-6 hours for production-ready setup"
+
+Replace relative terms with absolute values:
+  ❌ "This is expensive at scale"
+  ✓ "This costs $582/month at 5,000 orders/month"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+TECHNICAL DETAIL LEVEL
+
+CODE BLOCKS:
+
+• Include version numbers: "Tested with: Stripe API v2024.10"
+• Add comments for non-obvious logic
+• Show complete blocks (copy-pasteable)
+• Include error handling (not just happy path)
+
+SQL QUERIES:
+
+• Format for readability (proper indentation)
+• Include explanatory comments
+• Show both query and expected result
+• Note performance characteristics
+
+CONFIGURATION:
+
+• Show actual values (not just placeholders)
+• Explain what each setting does
+• Include security considerations
+• Note when values should be customized
+
+ERROR MESSAGES:
+
+• Show exact error text (copyable for searching)
+• Include error codes
+• Explain what causes it
+• Provide specific fix steps
+
+═══════════════════════════════════════════════════════════════════════════════
+
+FINANCIAL TRANSPARENCY
+
+COST BREAKDOWNS:
+
+Always include:
+  • Free tier limits
+  • When you'll exceed free tier
+  • Per-order costs at different volumes
+  • Total monthly costs by tier
+  • Cost comparison vs alternatives
+
+TIME ESTIMATES:
+
+Always include:
+  • Vendor estimate (if available)
+  • Actual time required
+  • Breakdown of where time goes
+  • Time saved vs doing it another way
+
+ROI CALCULATIONS:
+
+For major decisions, show:
+  • Implementation cost (time × hourly rate)
+  • Annual savings (prevented costs)
+  • ROI ratio
+  • Break-even point
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRODUCTION REALITY BOXES
+
+REQUIRED ELEMENTS:
+
+1. Failure Rate: "Expected failure rate: X% (Y in 1,000)"
+2. Common Causes: List top 3-5 with percentages
+3. Impact: Financial cost, time cost, customer impact
+4. Detection: How long until you notice
+5. Recovery: Steps to fix, time required
+6. Prevention: How to avoid in future
+
+FREQUENCY:
+
+• Minimum: 1 Production Reality box per subsection
+• Target: 30+ throughout the entire guide
+• Focus on: Common failures, unexpected behavior, non-obvious impacts
+
+PLACEMENT:
+
+• Immediately after explaining implementation
+• Before user commits significant time
+• Where vendor documentation is incomplete
+
+═══════════════════════════════════════════════════════════════════════════════
+
+5-DIMENSION DECISION EXPLANATION
+
+USE FOR: Major architectural decisions, service selection, implementation choices
+
+REQUIRED DIMENSIONS:
+
+1. BUSINESS REASON
+   Impact on revenue, customers, operations
+   Example: "Prevents customer double-charging, saves trust and refund costs"
+
+2. TECHNICAL REASON
+   Why this implementation approach works
+   Example: "Database constraint provides atomic protection against race conditions"
+
+3. FINANCIAL REASON
+   Cost to implement, cost to operate, ROI
+   Example: "Implementation: 90 minutes. Savings: $600/year. ROI: 400:1"
+
+4. OPERATIONAL REASON
+   Impact on daily operations, maintenance burden
+   Example: "Automatic check requires zero human intervention, runs in <150ms"
+
+5. STRATEGIC REASON
+   Long-term positioning, future capabilities
+   Example: "Foundation for audit compliance, prepares for 10x scale"
+
+FORMAT: Use template from ASCII_DIAGRAMS_LIBRARY.txt
+
+═══════════════════════════════════════════════════════════════════════════════
+
+VALIDATION CHECKPOINTS
+
+INCLUDE AFTER EACH IMPLEMENTATION STEP:
+
+Format:
+  Validation Checkpoint:
+    ✓ [Specific observable outcome 1]
+    ✓ [Specific observable outcome 2]
+    ✓ [Specific observable outcome 3]
+
+Make checkpoints:
+  • Observable (user can actually verify)
+  • Specific (not vague)
+  • Quick to check (< 5 minutes)
+  • Confirmatory (shows step succeeded)
+
+Example:
+  ✓ Webhook module created in Make.com
+  ✓ Webhook URL copied and stored securely
+  ✓ Scenario named descriptively
+
+NOT:
+  ✓ Everything looks good
+  ✓ Setup is complete
+  ✓ Ready to continue
+
+═══════════════════════════════════════════════════════════════════════════════
+
+MILESTONE CELEBRATIONS
+
+USE AT END OF MAJOR SECTIONS:
+
+Format: (see ASCII_DIAGRAMS_LIBRARY.txt for full template)
+
+═════════════════════════════════════════════════════════════════════════════
+🎯 MILESTONE ACHIEVED: [Section Name]
+
+At this point, you have:
+  ✓ [Capability 1 gained]
+  ✓ [Capability 2 gained]
+  ✓ [Capability 3 gained]
+
+Your system can now:
+  → [Function 1 enabled]
+  → [Function 2 enabled]
+  → [Function 3 enabled]
+
+You have prevented:
+  ✗ [Problem 1 avoided with cost savings]
+  ✗ [Problem 2 avoided with cost savings]
+  ✗ [Problem 3 avoided with cost savings]
+
+Financial Impact:
+  Time invested:     X hours
+  Annual savings:    $Y to $Z
+  Time saved:        A hours/year
+  ROI:              B:1
+
+Next Steps:
+  → [Link to next section]
+  → [Time estimate for next section]
+
+Confidence Check:
+  Before moving on, verify:
+    □ [Checkpoint 1]
+    □ [Checkpoint 2]
+    □ [Checkpoint 3]
+═════════════════════════════════════════════════════════════════════════════
+
+INCLUDE:
+  • Specific capabilities gained (not vague)
+  • Quantified savings (dollar amounts)
+  • Time invested vs time saved
+  • ROI calculation
+  • Confidence checklist (user self-assessment)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+COMMON FORMATTING MISTAKES TO AVOID
+
+❌ Using em-dashes for parenthetical remarks
+   Fix: Use actual parentheses, commas, or colons
+
+❌ Using hyphens where commas work better
+   Fix: "Easy, just connect" not "Easy - just connect"
+
+❌ Vague time estimates
+   Fix: "4-6 hours" not "several hours"
+
+❌ Missing costs in decisions
+   Fix: Always include financial impact
+
+❌ No validation after steps
+   Fix: Add checkpoint after each implementation step
+
+❌ Skipping the "why"
+   Fix: Explain business/technical/financial/operational/strategic reasons
+
+❌ Too many CRITICAL boxes
+   Fix: Reserve for actual critical information (1-2 per section max)
+
+❌ No production reality
+   Fix: Include failure rates, actual costs, real recovery times
+
+❌ Incomplete milestone celebrations
+   Fix: Include all elements (capabilities, savings, ROI, checklist)
+
+❌ Code without version info
+   Fix: "Tested with: [Service] [Version] on [Date]"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+QUALITY CHECKLIST FOR EACH SECTION
+
+Before considering a section complete, verify:
+
+FORMATTING:
+  □ No em-dashes in body text
+  □ No body-text hyphens (except ranges like "4-6 hours")
+  □ At least 1 ASCII diagram included
+  □ Visual flourishes used appropriately
+  □ Consistent separator usage
+
+STRUCTURE:
+  □ Quick Jump Menu at start
+  □ Time Reality Box included
+  □ 5-dimension explanation for major decisions
+  □ Production Reality box(es) with actual failure rates
+  □ Validation checkpoints after steps
+  □ Milestone celebration at end
+
+CONTENT:
+  □ Specific numbers (not vague estimates)
+  □ Time estimates for all tasks
+  □ Cost breakdowns where relevant
+  □ ROI calculations for major decisions
+  □ Real error messages and solutions
+  □ Testing procedures included
+
+TONE:
+  □ Confident (statistical data, not uncertainty)
+  □ Experienced (sharing real production lessons)
+  □ Specific (measurements, not generalizations)
+  □ Helpful (explains why, not just what)
+  □ Honest (includes problems and failure modes)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+EXAMPLES OF PROPER FORMATTING
+
+BEFORE (needs improvement):
+"The system uses Make.com—which is a great tool—to process orders. It's 
+pretty fast - usually takes a few seconds - and works well most of the time."
+
+AFTER (follows style guide):
+"The system uses Make.com (a no-code automation platform) to process orders. 
+Processing completes in 2.1 seconds (p95), with a 96.8% success rate based on 
+production data from 2,847 orders."
+
+───────────────────────────────────────────────────────────────────────────────
+
+BEFORE (needs improvement):
+"You should probably set up some kind of backup system in case the main one 
+fails. This might help avoid problems."
+
+AFTER (follows style guide):
+"Implement failover to Printify as secondary provider. Without failover, 
+Printful outages (occurring 3-4 times per year, lasting 2-6 hours) result in 
+lost revenue: $280-560 per incident at 20 orders/day. Failover implementation 
+takes 3 hours, recovers revenue from first outage, continues to prevent losses 
+for system lifetime."
+
+───────────────────────────────────────────────────────────────────────────────
+
+BEFORE (needs improvement):
+"Make sure to validate the webhook or bad things could happen."
+
+AFTER (follows style guide):
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ⚠ WARNING: Webhook signature validation prevents fraud                     │
+│                                                                             │
+│ Without validation: Any attacker can POST to your webhook URL and create   │
+│ fake orders. You fulfill orders with no corresponding payment.             │
+│                                                                             │
+│ Impact per fraudulent order: $15-30 (fulfillment cost)                     │
+│ Implementation time: 20 minutes                                             │
+│ ROI: Prevents first fraud attempt (infinite return)                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+
+TOOLS FOR MAINTAINING CONSISTENCY
+
+1. format_cleaner.py
+   Automatically detects and fixes em-dashes and body hyphens
+   Run before committing any section
+
+2. ASCII_DIAGRAMS_LIBRARY.txt
+   Copy-paste templates for all visual elements
+   Ensures consistent diagram style
+
+3. PART_2_EXPANSION_TEMPLATE.txt
+   Reference for complete section structure
+   Copy structure for new sections
+
+4. This style guide
+   Quick reference for formatting decisions
+   Review before writing each section
+
+═══════════════════════════════════════════════════════════════════════════════
+
+END OF STYLE GUIDE
+
+Keep this document open while writing. Reference it frequently. Consistency 
+across 100,000+ words requires systematic adherence to these rules.
+
+When in doubt:
+  • Be specific (numbers, measurements, examples)
+  • Include costs (time and money)
+  • Show failures (rates, recovery, prevention)
+  • Explain why (5 dimensions for major decisions)
+  • Add visuals (diagrams, boxes, separators)
+  • Celebrate progress (milestone boxes)
+  • Verify completion (validation checkpoints)
