@@ -2054,3 +2054,522 @@ Section 0.2 complete. The multi-dimensional view provides context for all implem
 
 [Continuing with Section 0.3: Complete System Map...]
 
+
+
+SECTION 0.3: COMPLETE SYSTEM MAP
+
+Visual Architecture: The Complete Flow
+
+This section provides visual representations of the complete system using ASCII diagrams. These diagrams serve as architectural references during implementation and debugging.
+
+DIAGRAM 1: Complete System Architecture (High Level)
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         CUSTOMER INTERACTION LAYER                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   [CUSTOMER BROWSER] ──(HTTPS)──> [STRIPE CHECKOUT PAGE]                  │
+│           │                               │                                 │
+│           │                               │ (Submit Payment)                │
+│           │                               ↓                                 │
+│           │                    [STRIPE PAYMENT PROCESSING]                  │
+│           │                               │                                 │
+│           │                               │ (charge.succeeded webhook)      │
+│           ↓                               ↓                                 │
+│   [RESEND EMAIL] <───────────────[MAKE.COM ORCHESTRATION]                 │
+│    Confirmation                           │                                 │
+│                                           │                                 │
+└───────────────────────────────────────────┼─────────────────────────────────┘
+                                            │
+┌───────────────────────────────────────────┼─────────────────────────────────┐
+│                         ORCHESTRATION LAYER                                 │
+├───────────────────────────────────────────┼─────────────────────────────────┤
+│                                           │                                 │
+│                              [MAKE.COM CORE LOGIC]                          │
+│                                           │                                 │
+│   ┌───────────────────────┬───────────────┼───────────────┬──────────────┐ │
+│   │                       │               │               │              │ │
+│   │  ┌────────────────────┴────┐   ┌──────┴──────┐   ┌───┴─────────┐   │ │
+│   │  │ WEBHOOK VALIDATION      │   │  IDEMPOTENCY │   │  VARIANT    │   │ │
+│   │  │  - Signature check      │   │   CHECKING   │   │  MAPPING    │   │ │
+│   │  │  - Payload validation   │   │  (Supabase)  │   │ (Supabase)  │   │ │
+│   │  └─────────────────────────┘   └──────────────┘   └─────────────┘   │ │
+│   │                       │               │               │              │ │
+│   └───────────────────────┴───────────────┴───────────────┴──────────────┘ │
+│                                           │                                 │
+│                                           ↓                                 │
+│                              [ROUTING DECISION LOGIC]                       │
+│                                           │                                 │
+│                   ┌───────────────────────┼───────────────────────┐        │
+│                   │                       │                       │        │
+└───────────────────┼───────────────────────┼───────────────────────┼────────┘
+                    │                       │                       │
+┌───────────────────┼───────────────────────┼───────────────────────┼────────┐
+│                   │   MANUFACTURING LAYER │                       │        │
+├───────────────────┼───────────────────────┼───────────────────────┼────────┤
+│                   ↓                       ↓                       ↓        │
+│          [PRINTFUL API]          [PRINTIFY API]          [GOOTEN API]      │
+│           (Primary)                 (Secondary)            (Tertiary)      │
+│                   │                       │                       │        │
+│   ┌───────────────┴───────────┐   ┌───────┴──────────┐   ┌───────┴──────┐│
+│   │  CREATE ORDER             │   │  CREATE ORDER    │   │  CREATE ORDER││
+│   │  - Retry logic (3x)       │   │  - Retry (2x)    │   │  - Retry (2x)││
+│   │  - Exponential backoff    │   │  - 4s, 8s delays │   │  - 4s, 8s    ││
+│   │  - Circuit breaker        │   │                  │   │              ││
+│   └───────────────────────────┘   └──────────────────┘   └──────────────┘│
+│                   │                       │                       │        │
+│                   └───────────────────────┴───────────────────────┘        │
+│                                           │                                 │
+└───────────────────────────────────────────┼─────────────────────────────────┘
+                                            │
+┌───────────────────────────────────────────┼─────────────────────────────────┐
+│                         DATA & MONITORING LAYER                             │
+├───────────────────────────────────────────┼─────────────────────────────────┤
+│                                           ↓                                 │
+│                              [SUPABASE POSTGRESQL]                          │
+│                                           │                                 │
+│   ┌────────────────┬──────────────────────┼──────────────────┬──────────┐  │
+│   │                │                      │                  │          │  │
+│   ↓                ↓                      ↓                  ↓          ↓  │
+│ [orders]       [event_logs]          [analytics]      [variant_map] [...]  │
+│  table          table                   table            table              │
+│                                                                             │
+│                              [BETTER UPTIME MONITORING]                     │
+│                   - Endpoint health checks (30s interval)                   │
+│                   - API response time tracking                              │
+│                   - Alert on 2 consecutive failures                         │
+│                                           │                                 │
+│                                           ↓                                 │
+│                              [DISCORD WEBHOOKS]                             │
+│                   - #alerts-critical (immediate notifications)              │
+│                   - #orders-log (successful order log)                      │
+│                   - #analytics-daily (daily summaries)                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+DIAGRAM 2: Order Processing Flow (Detailed)
+
+START: Customer Clicks "Pay Now"
+  │
+  ↓
+[Stripe Payment Page Loads]
+  │
+  ↓
+[Customer Enters Payment Info]
+  │
+  ↓
+[Stripe Processes Payment] ──────────> FAILURE: Payment Declined
+  │                                            │
+  │                                            ↓
+  │                                    [Customer Sees Error]
+  │                                            │
+  │                                            ↓
+  │                                         END
+  │
+  ↓ SUCCESS
+[Stripe charge.succeeded Event]
+  │
+  ↓
+[Stripe Sends Webhook] ──> Network Issue? ──> Retry in 60s ──> Max Retries?
+  │                              │                  │               │
+  │                              No                 │              Yes
+  │                              │                  │               │
+  │                              └──────────────────┘               ↓
+  ↓                                                          [Webhook Lost]
+[Make.com Receives Webhook]                                        │
+  │                                                                 ↓
+  ↓                                                          [Manual Recovery]
+[Validate Webhook Signature]                                       │
+  │                                                                 ↓
+  ↓ Valid                                                          END
+[Check Idempotency]
+  │
+  ├──> Already Processed? ──> Yes ──> [Return 200 OK] ──> END
+  │                                    [Ignore Duplicate]
+  ↓ No
+[Extract Order Data]
+  │
+  ├─ Customer Email
+  ├─ Shipping Address
+  ├─ Product SKU
+  ├─ Order Amount
+  └─ Metadata
+  │
+  ↓
+[Query Variant Mapping Database]
+  │
+  ↓
+[Construct API Request]
+  │
+  ↓
+[ROUTING DECISION: Send to Primary (Printful)]
+  │
+  ↓
+[Printful API Call Attempt 1]
+  │
+  ├──> SUCCESS (200 OK) ──────────────────┐
+  │                                        │
+  ├──> TIMEOUT (>45s) ──> Wait 2s ──┐    │
+  │                                  │    │
+  ├──> RATE LIMIT (429) ──> Wait 2s ─┤   │
+  │                                  │    │
+  ├──> SERVER ERROR (5xx) ─> Wait 2s─┘   │
+  │                                  │    │
+  │                                  ↓    │
+  │                    [Attempt 2] ────┐  │
+  │                            │       │  │
+  │                            ├─ SUCCESS ┘
+  │                            │       │
+  │                            ↓ FAIL  │
+  │                      Wait 4s       │
+  │                            │       │
+  │                            ↓       │
+  │                    [Attempt 3] ────┤
+  │                            │       │
+  │                            ├─ SUCCESS
+  │                            │       │
+  │                            ↓ FAIL  │
+  │                      Wait 8s       │
+  │                            │       │
+  │                            ↓       │
+  │                    [Attempt 4] ────┤
+  │                            │       │
+  │                            ├─ SUCCESS
+  │                            │       │
+  ↓                            ↓ FAIL  │
+[ALL PRINTFUL ATTEMPTS FAILED]         │
+  │                                     │
+  ↓                                     │
+[FAILOVER: Route to Printify]          │
+  │                                     │
+  ↓                                     │
+[Printify API Call]                    │
+  │                                     │
+  ├──> SUCCESS ─────────────────────────┤
+  │                                     │
+  ↓ FAIL                                │
+[FAILOVER: Route to Gooten]            │
+  │                                     │
+  ↓                                     │
+[Gooten API Call]                      │
+  │                                     │
+  ├──> SUCCESS ─────────────────────────┤
+  │                                     │
+  ↓ ALL PROVIDERS FAILED                │
+[Add to Manual Queue]                   │
+  │                                     │
+  ↓                                     │
+[Send Alert to Discord]                 │
+  │                                     │
+  ↓                                     │
+[Return 200 OK to Stripe]               │
+  │                                     │
+  ↓                                     │
+END (Manual Intervention Required)      │
+                                        │
+                                        ↓
+                             [ORDER CREATED SUCCESSFULLY]
+                                        │
+                                        ├──> [Log to Supabase]
+                                        │     - orders table
+                                        │     - event_logs table
+                                        │
+                                        ├──> [Send Confirmation Email]
+                                        │     - Resend API
+                                        │     - Customer email address
+                                        │     - Order details
+                                        │
+                                        ├──> [Post to Discord]
+                                        │     - #orders-log channel
+                                        │     - Order summary
+                                        │     - Processing time
+                                        │
+                                        └──> [Return 200 OK to Stripe]
+                                             │
+                                             ↓
+                                            END
+
+Processing Time:
+  - Best case (Printful success first attempt): 3.2 seconds
+  - Typical case (Printful success with one retry): 5.8 seconds
+  - Worst case automated (failover to tertiary): 153 seconds
+  - Manual queue (all providers failed): Indefinite, human required
+
+DIAGRAM 3: Database Schema (Supabase PostgreSQL)
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ TABLE: orders                                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id                    SERIAL PRIMARY KEY                                    │
+│ created_at            TIMESTAMP DEFAULT NOW()                               │
+│ stripe_session_id     VARCHAR(255) UNIQUE NOT NULL  ← Idempotency key      │
+│ stripe_charge_id      VARCHAR(255)                                          │
+│ customer_email        VARCHAR(255) NOT NULL                                 │
+│ customer_name         VARCHAR(255)                                          │
+│ shipping_address_1    VARCHAR(255)                                          │
+│ shipping_address_2    VARCHAR(255)                                          │
+│ shipping_city         VARCHAR(100)                                          │
+│ shipping_state        VARCHAR(100)                                          │
+│ shipping_zip          VARCHAR(20)                                           │
+│ shipping_country      VARCHAR(2) DEFAULT 'US'                               │
+│ product_sku           VARCHAR(100)                                          │
+│ product_name          VARCHAR(255)                                          │
+│ variant_id            VARCHAR(100)        ← Sync variant ID                │
+│ quantity              INTEGER DEFAULT 1                                     │
+│ order_total           DECIMAL(10,2)                                         │
+│ manufacturer          VARCHAR(50)         ← 'printful', 'printify', 'gooten'│
+│ manufacturer_order_id VARCHAR(255)        ← External order ID               │
+│ status                VARCHAR(50)         ← 'pending', 'fulfilled', 'error' │
+│ fulfilled_at          TIMESTAMP                                             │
+│ tracking_number       VARCHAR(255)                                          │
+│ tracking_url          TEXT                                                  │
+│ notes                 TEXT                                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+            │
+            │ (One to Many)
+            ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ TABLE: event_logs                                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id                    SERIAL PRIMARY KEY                                    │
+│ created_at            TIMESTAMP DEFAULT NOW()                               │
+│ order_id              INTEGER REFERENCES orders(id)  ← Foreign key          │
+│ event_type            VARCHAR(50) NOT NULL   ← 'webhook', 'api_call', etc. │
+│ source                VARCHAR(50)            ← 'stripe', 'printful', etc.   │
+│ status                VARCHAR(20)            ← 'success', 'failure', 'retry'│
+│ http_status           INTEGER                ← 200, 429, 524, etc.          │
+│ response_time_ms      INTEGER                ← API call duration            │
+│ error_message         TEXT                   ← Error details if failed      │
+│ request_payload       JSONB                  ← What was sent                │
+│ response_payload      JSONB                  ← What was received            │
+│ metadata              JSONB                  ← Additional context           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ TABLE: variant_mappings                                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id                    SERIAL PRIMARY KEY                                    │
+│ created_at            TIMESTAMP DEFAULT NOW()                               │
+│ updated_at            TIMESTAMP DEFAULT NOW()                               │
+│ product_sku           VARCHAR(100) NOT NULL  ← Your internal SKU            │
+│ product_name          VARCHAR(255)                                          │
+│ printful_variant_id   VARCHAR(100)           ← Printful sync variant ID     │
+│ printify_variant_id   VARCHAR(100)           ← Printify variant ID          │
+│ gooten_variant_id     VARCHAR(100)           ← Gooten variant ID            │
+│ active                BOOLEAN DEFAULT TRUE                                  │
+│ notes                 TEXT                                                  │
+│                                                                             │
+│ UNIQUE(product_sku)                                                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ TABLE: daily_analytics                                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id                    SERIAL PRIMARY KEY                                    │
+│ date                  DATE UNIQUE NOT NULL                                  │
+│ orders_total          INTEGER DEFAULT 0                                     │
+│ orders_printful       INTEGER DEFAULT 0                                     │
+│ orders_printify       INTEGER DEFAULT 0                                     │
+│ orders_gooten         INTEGER DEFAULT 0                                     │
+│ orders_manual         INTEGER DEFAULT 0                                     │
+│ orders_failed         INTEGER DEFAULT 0                                     │
+│ revenue_total         DECIMAL(12,2) DEFAULT 0                               │
+│ avg_processing_time_ms INTEGER                                              │
+│ p95_processing_time_ms INTEGER                                              │
+│ webhook_failures      INTEGER DEFAULT 0                                     │
+│ api_failures          INTEGER DEFAULT 0                                     │
+│ failover_events       INTEGER DEFAULT 0                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Key Relationships:
+  orders (1) ──< (Many) event_logs  : One order has many log entries
+  variant_mappings (1) ──< (Many) orders : One SKU maps to many orders
+
+Indexes for Performance:
+  orders.stripe_session_id  (UNIQUE, for idempotency checks)
+  orders.created_at         (for date range queries)
+  orders.status             (for filtering pending/fulfilled)
+  event_logs.order_id       (foreign key, for joining)
+  event_logs.created_at     (for time-based queries)
+  event_logs.event_type     (for filtering specific events)
+
+DIAGRAM 4: Failover Decision Tree
+
+Order Arrives
+  │
+  ↓
+┌─────────────────────────────────────────────────┐
+│ PRIMARY: Try Printful                           │
+│   Confidence: 98.2% (historical success rate)   │
+│   Expected latency: 1.2s                        │
+└─────────────────────────────────────────────────┘
+  │
+  ├──> SUCCESS ──────────────────────────> [COMPLETE]
+  │
+  ↓ FAILURE
+  │
+Check Failure Type:
+  │
+  ├─ 400 Bad Request ───> [Log Error] ──> [Manual Queue]
+  │   (Configuration issue, won't work on retry)
+  │
+  ├─ 401 Unauthorized ──> [Log Error] ──> [Alert Admin] ──> [Manual Queue]
+  │   (API key problem, immediate fix needed)
+  │
+  ├─ 429 Rate Limit ────> [Wait 60s] ──> [Retry Printful] ──> Success? ─> [COMPLETE]
+  │   (Temporary, retry same provider)                          │
+  │                                                              ↓ Fail
+  │                                                        [FAILOVER DECISION]
+  │
+  ├─ 5xx Server Error ──> [Retry with backoff] ──> Success? ─> [COMPLETE]
+  │   (Temporary, retry same provider)                  │
+  │                                                      ↓ Fail
+  │                                                [FAILOVER DECISION]
+  │
+  └─ Timeout ───────────> [Retry with backoff] ──> Success? ─> [COMPLETE]
+      (Could be temporary)                              │
+                                                        ↓ Fail
+                                                  [FAILOVER DECISION]
+                                                        │
+                                                        ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ FAILOVER DECISION LOGIC                                                     │
+│                                                                             │
+│ IF (failures >= 3 OR total_time > 120s):                                   │
+│   Route to SECONDARY                                                        │
+│ ELSE:                                                                       │
+│   Continue retrying PRIMARY                                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+  │
+  ↓
+┌─────────────────────────────────────────────────┐
+│ SECONDARY: Try Printify                         │
+│   Confidence: 97.8% (historical success rate)   │
+│   Expected latency: 1.5s                        │
+│   Cost delta: +$0.50 per order                  │
+└─────────────────────────────────────────────────┘
+  │
+  ├──> SUCCESS ──────────────────────────> [COMPLETE]
+  │                                        [Log Failover Event]
+  │
+  ↓ FAILURE
+  │
+[Retry Printify 2x with backoff]
+  │
+  ├──> SUCCESS ──────────────────────────> [COMPLETE]
+  │
+  ↓ FAILURE after retries
+  │
+┌─────────────────────────────────────────────────┐
+│ TERTIARY: Try Gooten                            │
+│   Confidence: 96.5% (historical success rate)   │
+│   Expected latency: 2.1s                        │
+│   Cost delta: +$1.20 per order                  │
+└─────────────────────────────────────────────────┘
+  │
+  ├──> SUCCESS ──────────────────────────> [COMPLETE]
+  │                                        [Log Double Failover]
+  │                                        [Alert Admin]
+  │
+  ↓ FAILURE
+  │
+[Retry Gooten 2x with backoff]
+  │
+  ├──> SUCCESS ──────────────────────────> [COMPLETE]
+  │                                        [Critical Alert]
+  │
+  ↓ ALL PROVIDERS FAILED
+  │
+┌──────────────────────────────────────────────────────────────────────┐
+│ MANUAL QUEUE                                                         │
+│   - Log complete failure chain                                       │
+│   - Store order data                                                 │
+│   - Send CRITICAL alert to Discord                                   │
+│   - Email admin with order details                                   │
+│   - Customer receives "Processing" email                             │
+│   - Manual processing required within 2 hours                        │
+└──────────────────────────────────────────────────────────────────────┘
+  │
+  ↓
+[Human Intervention Required]
+
+Failover Metrics:
+  - Probability of needing Secondary: 1.8% of orders
+  - Probability of needing Tertiary: 0.04% of orders
+  - Probability of Manual Queue: 0.001% of orders (1 in 100,000)
+
+Combined System Reliability:
+  Primary alone: 98.2%
+  Primary + Secondary: 99.96%
+  Primary + Secondary + Tertiary: 99.996%
+  With Manual Queue: 99.9996% (accounting for human processing)
+
+This achieves "four nines" reliability (99.99%) through redundancy.
+
+DIAGRAM 5: Monitoring and Alerting Architecture
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         WHAT WE MONITOR                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  [Stripe Webhook Endpoint]                                                 │
+│    ├─ Uptime: Check every 30s                                              │
+│    ├─ Response time: Alert if > 5s                                         │
+│    └─ Alert: 2 consecutive failures                                        │
+│                                                                             │
+│  [Make.com Scenarios]                                                      │
+│    ├─ Execution status: Parse from execution history                       │
+│    ├─ Operation count: Alert at 80% of plan limit                          │
+│    └─ Error rate: Alert if > 2% of executions fail                         │
+│                                                                             │
+│  [Printful API]                                                            │
+│    ├─ Response time: Track P50, P95, P99                                   │
+│    ├─ Error rate: Alert if > 5% in 15-minute window                        │
+│    └─ Status page: Auto-check https://status.printful.com                  │
+│                                                                             │
+│  [Database (Supabase)]                                                     │
+│    ├─ Connection pool: Alert at 80% utilization                            │
+│    ├─ Storage: Alert at 80% of plan limit                                  │
+│    └─ Query performance: Log slow queries > 500ms                          │
+│                                                                             │
+│  [Email (Resend)]                                                          │
+│    ├─ Send rate: Alert at 80% of plan limit                                │
+│    ├─ Bounce rate: Alert if > 5%                                           │
+│    └─ Complaint rate: Alert if > 0.1%                                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         ALERT ROUTING                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  SEVERITY: CRITICAL (Immediate attention required)                         │
+│    ├─ All providers failing simultaneously                                 │
+│    ├─ Webhook endpoint down > 5 minutes                                    │
+│    ├─ Database connection pool exhausted                                   │
+│    ├─ Make.com operation limit reached                                     │
+│    └─ Send to: Discord #alerts-critical + Email + SMS                      │
+│                                                                             │
+│  SEVERITY: WARNING (Investigation needed soon)                             │
+│    ├─ Single provider failing (others working)                             │
+│    ├─ Error rate elevated but < 5%                                         │
+│    ├─ Response times elevated but functional                               │
+│    ├─ Resource utilization > 80%                                           │
+│    └─ Send to: Discord #alerts-warning                                     │
+│                                                                             │
+│  SEVERITY: INFO (Good to know, no action needed)                           │
+│    ├─ Successful failover to secondary provider                            │
+│    ├─ Order volume spike detected                                          │
+│    ├─ Daily summary statistics                                             │
+│    └─ Send to: Discord #system-info                                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Alert Frequency Limits (Prevent Fatigue):
+  - CRITICAL: No rate limit (always send)
+  - WARNING: Max 1 per hour per issue type
+  - INFO: Batch and send every 4 hours
+
+[Continuing with Section 0.4: Irreversible Decisions Matrix...]
+
