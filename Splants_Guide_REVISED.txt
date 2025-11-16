@@ -5,7 +5,7 @@ Production Reality Edition: What Actually Happens When You Build This
 
 MANDATORY READING BEFORE YOU START
 
-This guide tells you what actually happens when you build e-commerce automation, not what vendors promise. You will encounter every failure mode described here. You will make every mistake documented here. You will spend more time than estimated here. The question is whether you do it informed or surprised.
+This guide tells you what actually happens when you build ecommerce automation, not what vendors promise. You will encounter every failure mode described here. You will make every mistake documented here. You will spend more time than estimated here. The question is whether you do it informed or surprised.
 
 Reading time: 18 hours over 3 weeks if you're actually absorbing it
 Skimming time: 4 hours but you'll be back reading it properly after your first production failure
@@ -31,16 +31,16 @@ What This Guide Actually Delivers
 Working automation that processes orders from Stripe payment to Printful fulfillment in 47 seconds average, 140 seconds maximum when Printful API is slow. You will build this. You will then spend 3 months optimizing it because 47 seconds feels too slow once you see it working. This is normal. This is the optimization addiction phase documented in the Emotional Journey section.
 
 The system handles:
-├─ Order processing: 47 seconds average (60% under 40 seconds, 30% between 40-60 seconds, 10% hit retries and take 80-140 seconds)
-├─ Email confirmations: 12-18 seconds after order captured (Resend average latency)
-├─ Provider failover: 8-12 seconds to detect failure, 15-20 seconds to route to backup (total interruption: 23-32 seconds customer never sees)
+├─ Order processing: 47 seconds average (60% under 40 seconds, 30% between 40 to 60 seconds, 10% hit retries and take 80 to 140 seconds)
+├─ Email confirmations: 12 to 18 seconds after order captured (Resend average latency)
+├─ Provider failover: 8 to 12 seconds to detect failure, 15 to 20 seconds to route to backup (total interruption: 23 to 32 seconds customer never sees)
 ├─ Error alerting: 90 seconds from failure to Discord ping (Better Uptime polling interval + Make.com processing)
 
 What it does NOT handle:
 ├─ Customer
 
  who email asking about orders 3 minutes after ordering
-├─ Printful's random 45-second timeout that isn't documented anywhere
+├─ Printful's random 45 second timeout that isn't documented anywhere
 ├─ The Stripe webhook that fires 3 times for a single payment 2% of the time
 ├─ Your sanity during the first production failure
 
@@ -49,7 +49,7 @@ The Manual Operations Reality
 
 At 100 orders per month:
 ├─ Dashboard checking: 47 minutes daily (you check Stripe 14 times, Printful 9 times, even though nothing changes)
-├─ Order entry: 183 minutes per day (12 minutes × 3-4 orders daily, but you batch them so it feels like less)
+├─ Order entry: 183 minutes per day (12 minutes × 3 to 4 orders daily, but you batch them so it feels like less)
 ├─ Email responses: 91 minutes daily (answering "where's my order" when you sent tracking 2 hours ago)
 ├─ Reconciliation: 2.5 hours Friday afternoon (finding the 3 orders that didn't sync properly)
 ├─ Emergency fixes: 1.5 hours weekly (random issues you can't predict)
@@ -58,7 +58,7 @@ Total: 22.8 hours weekly (not the 18 hours we originally estimated, we were opti
 
 The Automated Version:
 ├─ Monitoring Discord: 8 minutes daily (checking #alerts-critical, becomes compulsive)
-├─ Handling exceptions: 23 minutes daily (the 2-3 orders that hit edge cases)
+├─ Handling exceptions: 23 minutes daily (the 2 to 3 orders that hit edge cases)
 ├─ Weekly reconciliation: 12 minutes (automated reports, you just verify)
 
 Total: 2.1 hours weekly
@@ -69,29 +69,29 @@ What This Guide Requires
 (The Real Requirements, Not the Encouraging Ones)
 
 TEMPORAL HONESTY:
-├─ Initial build: 87 hours minimum across 3-4 weeks (weekends + evenings if you have day job)
-├─ First production failure recovery: 4-6 hours (happens week 2, always)
-├─ Optimization rabbit holes: 40 additional hours over months 2-4 (you cannot resist)
+├─ Initial build: 87 hours minimum across 3 to 4 weeks (weekends + evenings if you have day job)
+├─ First production failure recovery: 4 to 6 hours (happens week 2, always)
+├─ Optimization rabbit holes: 40 additional hours over months 2 to 4 (you cannot resist)
 ├─ Ongoing maintenance: 90 minutes weekly after month 6 (if nothing breaks)
 
 MISTAKE BUDGET:
 You will lose money learning this. Budget for it:
-├─ Test orders to wrong addresses: $45-80 (you will fuck up the Printful sandbox configuration)
-├─ Duplicate orders sent to customers: $120-200 (webhook idempotency, you'll implement it wrong first)
-├─ Make.com operations overage: $30-50 (you'll hit your limit at 3 PM on day 12, right before you figured out you're logging every single API call unnecessarily)
+├─ Test orders to wrong addresses: $45 to $80 (you will fuck up the Printful sandbox configuration)
+├─ Duplicate orders sent to customers: $120 to $200 (webhook idempotency, you'll implement it wrong first)
+├─ Make.com operations overage: $30 to $50 (you'll hit your limit at 3 PM on day 12, right before you figured out you're logging every single API call unnecessarily)
 ├─ Stripe test mode confusion in production: $0 but 4 hours of panic and customer apologies
 
-Total mistake budget: $195-330 plus your pride
+Total mistake budget: $195 to $330 plus your pride
 
 EXPERTISE GRADIENT:
-├─ Stripe setup: Copy-paste safe (their docs are excellent, this takes 45 minutes)
+├─ Stripe setup: Copy paste safe (their docs are excellent, this takes 45 minutes)
 ├─ Make.com scenarios: Requires debugging skills (you will create infinite loops, they will bill you)
 ├─ Webhook signature validation: Requires architectural thinking (skip it and eat fraud, or implement it properly)
 ├─ Database schema design: Requires business judgment (wrong choices haunt you for 18 months)
 ├─ Failover logic: Requires accepting imperfection (it will fail in ways you didn't anticipate)
 
 TECHNICAL DEBT YOU'RE ACCEPTING:
-├─ Make.com vendor lock-in: Switching cost = 40 hours rebuild (you're committing to their pricing)
+├─ Make.com vendor lockin: Switching cost = 40 hours rebuild (you're committing to their pricing)
 ├─ Printful primary dependency: They change TOS, you're fucked (happened March 2023, multiple businesses scrambled)
 ├─ No automated testing: You test in production (you'll say you won't, you will)
 ├─ Supabase free tier limits: At 1,100 orders/day you hit connection pool limits, migration to paid tier takes 6 hours of downtime (or you pay $25/month earlier)
@@ -130,7 +130,7 @@ AT 47 ORDERS/DAY:
 ├─ Symptom: Printful API returns 429 "Rate Limited"
 ├─ Error message: {"error": "Rate limit exceeded. Retry after 60 seconds"}
 ├─ What actually happens: Your Make.com scenario hangs, 3 orders queue, customers get confirmations 8 minutes late
-├─ Fix: Implement 2-second delay between API calls (costs 2 Make.com operations per order)
+├─ Fix: Implement 2 second delay between API calls (costs 2 Make.com operations per order)
 ├─ Time to implement fix: 35 minutes
 ├─ Time to discover you need fix: 6 hours (when customer emails asking)
 
@@ -153,7 +153,7 @@ AT 500 ORDERS/DAY:
 
 AT 1,100 ORDERS/DAY:
 ├─ Symptom: Supabase connection pool exhausted
-├─ Error message: "remaining connection slots reserved for non-replication superuser connections"
+├─ Error message: "remaining connection slots reserved for non replication superuser connections"
 ├─ Customer impact: Database writes fail, orders process but don't log
 ├─ Failure cascade: 6 hours later you realize you have no record of 240 orders
 ├─ Recovery: Rebuild from Stripe API backfill (12 hours)
@@ -169,7 +169,7 @@ You've configured Stripe, created a Make.com scenario, it doesn't fire. You chec
 Emotion: "I'm too stupid for this"
 Reality: Trailing spaces are the #1 debugging tax, happens to everyone
 Time wasted: 52 minutes
-Lesson: Copy-paste into text editor, check for whitespace, THEN paste into Make.com
+Lesson: Copy paste into text editor, check for whitespace, THEN paste into Make.com
 
 WEEK 2: False Confidence
 Everything works in test mode. You switch to production. First live order processes perfectly. Second order processes perfectly. Third order: Printful returns 400 "Invalid variant ID". You don't know why. The variant ID is correct. You check 6 times. You create a support ticket. Response time: 14 hours. Answer: "You're using the product variant ID, you need the sync variant ID."
@@ -186,7 +186,7 @@ Emotion: Shame + panic + "Why didn't I build this correctly?"
 Reality: Everyone learns failover importance via production failure
 Preventable: Yes, if you build Part 2 Section 3 (Triple Redundancy) before going live
 Prevention time cost: 2.5 hours
-Learning-the-hard-way time cost: 4 hours emergency + 4 hours implementation = 8 hours
+Learning the hard way time cost: 4 hours emergency + 4 hours implementation = 8 hours
 
 MONTH 3: Trust Emerges
 Printful API goes down. You're at dinner. You check Discord at 8:47 PM: "Printful timeout, switched to Printify, 3 orders processed successfully." You go back to dinner.
@@ -202,7 +202,7 @@ Everything works. You start optimizing things that don't need optimization. You 
 Emotion: "Just one more improvement"
 Reality: Optimization addiction, very common phase
 Solution: Set rule: no optimization unless it saves 2+ hours monthly
-Time wasted on useless optimization: 15-30 hours (everyone does this)
+Time wasted on useless optimization: 15 to 30 hours (everyone does this)
 
 YEAR 1: What You'd Do Differently
 If you built it again from scratch:
@@ -218,9 +218,9 @@ You will not learn this until you've wasted those 40 hours. This is okay. Everyo
 What This Guide Cannot Fix
 
 UNCOMFORTABLE TRUTH #1: You will check Discord compulsively
-For the first 6 weeks, you'll check #alerts-critical 40-60 times daily. Week 4 you'll check it at a stoplight. Month 2 you'll check it during sex. Month 3 you'll check it 12 times daily. Month 6 you'll check it 4 times daily. Year 1 you'll check it when you think about it.
+For the first 6 weeks, you'll check #alerts-critical 40 to 60 times daily. Week 4 you'll check it at a stoplight. Month 2 you'll check it during sex. Month 3 you'll check it 12 times daily. Month 6 you'll check it 4 times daily. Year 1 you'll check it when you think about it.
 
-This is not a discipline problem. This is a trust-building process. The automation must prove itself repeatedly before your nervous system believes it.
+This is not a discipline problem. This is a trust building process. The automation must prove itself repeatedly before your nervous system believes it.
 
 UNCOMFORTABLE TRUTH #2: Perfect automation doesn't exist
 Your system will process orders at 98.7% reliability. 1.3% will hit edge cases:
@@ -229,7 +229,7 @@ Your system will process orders at 98.7% reliability. 1.3% will hit edge cases:
 ├─ Customer addresses that geocode incorrectly (0.4% of orders)
 ├─ Unicode characters in names that break API calls (0.2% of orders)
 
-You will manually fix 1-2 orders weekly forever. This is the irreducible complexity tax. Anyone who tells you otherwise is lying.
+You will manually fix 1 to 2 orders weekly forever. This is the irreducible complexity tax. Anyone who tells you otherwise is lying.
 
 UNCOMFORTABLE TRUTH #3: You will rebuild at least one integration
 Month 4 or month 9, a service will update their API. Your integration will break. You'll spend 6 hours fixing it. This is not a failure. This is software.
@@ -246,12 +246,12 @@ Despite automation, despite monitoring, despite testing, you will fuck up an ord
 This never fully goes away. Year 3 you still feel it. You just recover faster.
 
 UNCOMFORTABLE TRUTH #5: The "gives up and hires someone" threshold is $4,200
-If you're not past break-even by $4,200 invested time + money, 80% of people quit and hire someone. This happens around week 6-8.
+If you're not past break even by $4,200 invested time + money, 80% of people quit and hire someone. This happens around week 6 to 8.
 
 Week 6 crisis point:
 ├─ Time invested: 87 hours build + 15 hours debugging = 102 hours
 ├─ Money invested: $250 mistakes + $64 Make.com (2 months) = $314
-├─ Total cost: 102 hours × $40/hour + $314 = $4,394
+├─ Total cost: 102 hours × $40 per hour + $314 = $4,394
 ├─ Working automation: Maybe 60% functional
 ├─ Emotional state: Exhausted
 ├─ Hiring someone looks very appealing at this point
@@ -271,8 +271,8 @@ What You're Actually Building
 You're building a distributed system that processes payments, routes orders through multiple manufacturers, logs everything to a database, sends emails, and alerts you when things break. This system has 47 unique failure scenarios. You'll encounter 31 of them in year 1.
 
 Reading time for this section: 52 minutes
-Implementation time: Parts 0-1 are reading only, implementation starts Part 2
-Value: Prevents 8-12 hours of rebuilding from wrong architectural choices
+Implementation time: Parts 0 to 1 are reading only, implementation starts Part 2
+Value: Prevents 8 to 12 hours of rebuilding from wrong architectural choices
 
 The Simple Lie vs Complex Truth
 
@@ -286,10 +286,10 @@ This chain has 11 steps.
 Each step has 3 failure modes minimum.
 Total potential failures: 47 unique combinations.
 
-Build time for reliable version: 87 hours across 3-4 weeks
+Build time for reliable version: 87 hours across 3 to 4 weeks
 Build time for "works until it doesn't" version: 4 hours
 
-You will build the 4-hour version first. You will rebuild it properly after your first production failure costs you $180-400. This is normal. This guide exists so you rebuild it correctly the second time.
+You will build the 4 hour version first. You will rebuild it properly after your first production failure costs you $180 to $400. This is normal. This guide exists so you rebuild it correctly the second time.
 
 Complete Failure Catalog
 (What Actually Breaks And When)
@@ -298,7 +298,7 @@ FAILURE #1: Stripe Webhook Never Arrives
 ├─ Probability: 4.2% of months experience at least one webhook loss
 ├─ Symptom: Customer pays, you see charge in Stripe, Make.com never fires
 ├─ Customer perspective: "I paid 4 hours ago, where's my confirmation?"
-├─ Detection without monitoring: When customer emails (4-12 hours)
+├─ Detection without monitoring: When customer emails (4 to 12 hours)
 ├─ Detection with Better Uptime: 15 minutes (notices endpoint silence)
 ├─ Cascade timeline:
 │   ├─ 1 hour: Customer anxious, checking email
@@ -313,7 +313,7 @@ FAILURE #1: Stripe Webhook Never Arrives
 └─ Real occurrence: March 2024, Printful seller lost $840 in chargebacks
 
 FAILURE #2: Printful API Timeout
-├─ Probability: 12% of API calls during deploy windows (3-4 times weekly)
+├─ Probability: 12% of API calls during deploy windows (3 to 4 times weekly)
 ├─ Symptom: Make.com scenario shows "Error: HTTP 524 Gateway Timeout"
 ├─ Customer perspective: Got confirmation but no shipping update for 9 days
 ├─ Detection without logging: Never (looks like slow manufacturing)
@@ -323,12 +323,12 @@ FAILURE #2: Printful API Timeout
 │   ├─ 6 hours: Still stuck, customer starting to wonder
 │   ├─ 24 hours: Order effectively lost, must manually retry
 │   └─ 72 hours: Customer assumes you forgot them
-├─ Root cause: Printful deploys during business hours, timeout lasts 15-45 minutes
+├─ Root cause: Printful deploys during business hours, timeout lasts 15 to 45 minutes
 ├─ Documented where: Nowhere (you discover via production failure)
 ├─ The fix: Exponential backoff retry: wait 2s, 4s, 8s, then route to Printify
 ├─ Fix time: 1.5 hours to implement retry logic
-├─ Cost without fix: 12% of orders fail during deploy windows (3-4 orders weekly at 100/month)
-└─ Real occurrence: April 18, 2024, 2:00 PM EST, 43-minute timeout, ~2,000 sellers affected
+├─ Cost without fix: 12% of orders fail during deploy windows (3 to 4 orders weekly at 100 per month)
+└─ Real occurrence: April 18, 2024, 2:00 PM EST, 43 minute timeout, ~2,000 sellers affected
 
 FAILURE #3: Unicode Character Breaks Everything
 ├─ Probability: 0.8% of orders contain problematic characters
@@ -341,8 +341,8 @@ FAILURE #3: Unicode Character Breaks Everything
 │   ├─ 1 hour: Customer waiting for confirmation
 │   ├─ 6 hours: Customer emails asking what happened
 │   ├─ 24 hours: Customer requests refund
-│   └─ 7 days: Customer leaves 1-star review
-├─ Root cause: Printful API expects UTF-8 but rejects some extended characters
+│   └─ 7 days: Customer leaves 1 star review
+├─ Root cause: Printful API expects UTF 8 but rejects some extended characters
 ├─ Which characters: Varies by API version, discover through failures
 ├─ The fix: Sanitize metadata before sending (transliterate special chars)
 ├─ Fix time: 45 minutes to implement, 3 weeks to discover all edge cases
@@ -350,7 +350,7 @@ FAILURE #3: Unicode Character Breaks Everything
 └─ Real occurrence: 11 orders over 6 months before pattern identified
 
 FAILURE #4: Duplicate Webhook Fires
-├─ Probability: 2.1% of payments trigger webhook 2-3 times
+├─ Probability: 2.1% of payments trigger webhook 2 to 3 times
 ├─ Symptom: Same order created in Printful twice, customer charged once
 ├─ Customer perspective: Receives 2 shipments, confused but not complaining
 ├─ Detection: When you reconcile Stripe charges to Printful orders
@@ -359,13 +359,13 @@ FAILURE #4: Duplicate Webhook Fires
 │   ├─ 24 hours: Both orders manufactured
 │   ├─ 7 days: Customer receives first package
 │   ├─ 9 days: Customer receives second package (surprise!)
-│   └─ You're out $28-32 manufacturing cost
+│   └─ You're out $28 to $32 manufacturing cost
 ├─ Root cause: Stripe retries webhook on slow response, you process both
 ├─ The fix: Idempotency checking (store session_id, reject duplicates)
 ├─ Fix time: 1.2 hours to implement correctly
 ├─ Implementation difficulty: You'll implement wrong first (everyone does)
 ├─ Wrong implementation: Checking order ID instead of session ID
-├─ Cost of wrong implementation: Discover after 3-4 duplicate orders ($90-120)
+├─ Cost of wrong implementation: Discover after 3 to 4 duplicate orders ($90 to $120)
 └─ Learning curve: 3 hours total (initial attempt + debugging + correct version)
 
 FAILURE #5: Make.com Operation Limit
@@ -393,6 +393,214 @@ FAILURE #6: Database Connection Pool Exhaustion
 ├─ When it bites: Your first successful marketing campaign drives 1,200 orders in 18 hours
 └─ Learning: Pay for headroom before you need it, not after
 
+Failure Forensics: The Cascade Studies
+(How Simple Failures Become Complex Disasters)
+
+The failures above are documented in isolation. Reality is messier: failures cascade. A 5 second timeout becomes a 6 hour support nightmare. A Unicode character becomes a package return and an angry Facebook post. Here's how failures actually compound in production.
+
+THE CASCADE STUDIES
+
+CASCADE #1: The Payment Confirmation Disaster
+Initial failure: Stripe webhook timeout (5 seconds)
+Cascade timeline:
+├─ T+0: Stripe sends webhook to Make.com
+├─ T+5s: Timeout, Stripe marks as failed
+├─ T+10s: Stripe schedules retry for T+60s
+├─ T+15s: Customer refreshes email (no confirmation)
+├─ T+60s: Retry attempt hits Make.com
+├─ T+61s: Make.com scenario already processing different order
+├─ T+62s: Race condition: both orders access same database row
+├─ T+63s: Database lock timeout
+├─ T+65s: Both scenarios fail
+├─ T+120s: Stripe retry #2
+├─ T+125s: Finally processes, but customer already panicking
+├─ T+6hr: Customer emails support
+├─ T+6hr 15min: You discover 3 orders in similar state
+├─ Recovery time: 2 hours manual reconciliation
+
+Root cause chain:
+1. Make.com endpoint slow (processing previous order)
+2. Stripe timeout too aggressive (5 seconds)
+3. No queue between webhook and processing
+4. Database locking strategy wrong
+5. No real time monitoring of webhook failures
+
+Prevention stack (implement ALL):
+1. Webhook queue (decouple receipt from processing)
+2. Increase Stripe timeout to 20 seconds (undocumented but possible)
+3. Optimistic locking in database
+4. Webhook failure monitor (alerts at 2 failures in 5 minutes)
+
+Time to implement full prevention: 4 hours
+Time lost to cascading failures before implementation: 8 to 12 hours across 3 incidents
+
+CASCADE #2: The Unicode Avalanche
+Initial: Customer named "François" from "Montréal"
+├─ Stripe accepts: Passes UTF 8 perfectly
+├─ Make.com receives: Processes correctly
+├─ Printful API call: Rejects with "Invalid character"
+├─ Make.com retry: Sends same data, fails again
+├─ After 3 retries: Routes to Printify
+├─ Printify accepts: BUT mangles to "Fran?ois"
+├─ Order ships: To "Fran?ois" in "Montr?al"
+├─ Package delivery: Fails (address invalid)
+├─ Return to sender: 14 days later
+├─ Customer experience: Charged, no product, name butchered
+├─ Support burden: 2 hours across 4 emails
+└─ Final resolution: Full refund + free replacement + still angry
+
+The hidden cascade:
+├─ Customer tells 3 friends about bad experience
+├─ Posts in Facebook group about your "broken" store
+├─ You implement sanitization
+├─ But now "José" becomes "Jose" (customer notices)
+├─ Different customer complains about name change
+└─ No perfect solution exists
+
+Implementation reality:
+Option 1: Sanitize (lose cultural names)
+Option 2: Don't sanitize (orders fail)
+Option 3: Manual review queue (defeats automation)
+Choice: Sanitize with customer notice ("Special characters removed for shipping")
+
+CASCADE #3: The Black Friday Collapse
+Initial: Printful goes down on Black Friday (happened November 24, 2023)
+├─ T+0: Black Friday, your best sales day, 4x normal traffic
+├─ T+10min: Printful API starts timing out
+├─ T+15min: Your Make.com scenario switches to Printify (good!)
+├─ T+20min: Printify overwhelmed by other sellers also failing over
+├─ T+25min: Printify starts timing out
+├─ T+30min: Orders routing to Gooten (tertiary)
+├─ T+35min: Gooten also struggling with surge
+├─ T+45min: All three manufacturers degraded
+├─ T+60min: Orders backing up in Make.com queue
+├─ T+90min: Make.com operation limit hit (executing retries uses operations)
+├─ T+91min: All scenarios stop
+├─ T+2hr: You notice (checking dashboard)
+├─ T+2hr 5min: Upgrade Make.com tier (panic)
+├─ T+2hr 15min: Scenarios resume, 47 orders in queue
+├─ T+2hr 45min: Queue processes, but 8 orders timed out completely
+├─ T+3hr: Manually processing failed orders
+├─ Revenue lost: 8 orders × $40 = $320 plus customer goodwill
+
+Root cause chain:
+1. Single point of calendar failure (everyone has Black Friday)
+2. All backup providers experience same surge
+3. Operation limits not sized for retry storms
+4. No circuit breaker (kept retrying failing endpoints)
+5. No queue depth monitoring
+
+Prevention stack:
+1. Upgrade Make.com tier BEFORE Black Friday (not during)
+2. Circuit breaker: stop retrying after 3 consecutive failures
+3. Queue depth alerts (warn at 10 pending orders)
+4. Load test failover paths (discover capacity limits before Black Friday)
+5. Customer communication: auto email "High volume, processing within 2 hours"
+
+Time to implement: 6 hours
+Cost of not implementing: $320 revenue + customer trust damage
+
+CASCADE #4: The Database Migration Disaster
+Initial: Supabase free tier running out of space at 480MB / 500MB
+├─ Day 1: Database at 480MB, you plan migration to paid tier
+├─ Day 2: Marketing email goes out, order surge
+├─ Day 2, 2PM: Database hits 500MB limit
+├─ Day 2, 2:01PM: All writes start failing
+├─ Day 2, 2:01PM: Orders process through Printful but don't log
+├─ Day 2, 2:15PM: You notice database error alerts
+├─ Day 2, 2:20PM: Upgrade to paid tier, restart scenarios
+├─ Day 2, 2:30PM: New orders logging correctly
+├─ Day 2, 3:00PM: Realize 34 orders processed but never logged
+├─ Day 2, 3:15PM: Begin Stripe API backfill to find missing orders
+├─ Day 2, 6:30PM: Finish manual reconciliation
+├─ Day 3: Discover 2 orders were charged but never sent to Printful
+├─ Day 3: Manually submit those 2 orders (now 18 hours late)
+├─ Day 4: Customers email asking about delay
+├─ Week 2: Discover accounting mismatch, 1 order still missing
+└─ Week 2: Write off $40, never found that order
+
+Total damage:
+├─ Time spent: 12 hours emergency response
+├─ Revenue lost: $40 (missing order)
+├─ Customer experience: 2 orders delayed, multiple confused customers
+└─ Emotional damage: Significant (lost data is worst feeling)
+
+Root cause chain:
+1. Monitoring database size but not acting proactively
+2. No graceful degradation (writes fail hard)
+3. No automatic backfill mechanism
+4. Printful success but database failure not handled
+5. Running at 96% capacity (should upgrade at 80%)
+
+Prevention stack:
+1. Upgrade at 80% capacity, not 96%
+2. Database size alerts at 70%, 80%, 90%
+3. Separate critical path (order creation) from logging
+4. Automatic reconciliation job (runs every 6 hours, finds missing orders)
+5. Write failures trigger immediate critical alert
+
+Time to implement prevention: 5 hours
+Cost of learning the hard way: 12 hours + $40 + trust damage
+
+CASCADE #5: The Variant Mapping Apocalypse
+Initial: You update a product design, change the variant mapping
+├─ Monday 9AM: Update geometric_001 to use new Printful sync variant
+├─ Monday 9:05AM: Test order, works perfectly
+├─ Monday 9:10AM: Update mapping in Make.com data store
+├─ Monday 9:15AM: You think you're done
+├─ Monday 2PM: Customer orders geometric_001 in size L
+├─ Monday 2:01PM: Make.com looks up variant: gets NEW mapping
+├─ Monday 2:02PM: Sends to Printful with new variant ID
+├─ Monday 2:03PM: Printful accepts (variant exists)
+├─ Monday 2:05PM: Order processes successfully
+├─ Week later: Customer receives geometric_002 instead of geometric_001
+├─ Week later: Customer emails "Wrong design"
+├─ Week later: You investigate, discover mapping was for wrong design
+├─ Week later: Check how many orders affected
+├─ Week later: 14 orders in past week used wrong variant
+├─ Week later: Contact all 14 customers
+├─ Week later: Offer refund or free replacement
+├─ Week later: 9 want replacement, 5 want refund
+├─ Week later: Process 9 manual orders (correct variant this time)
+├─ Week later: Issue 5 refunds
+└─ Total cost: 9 replacements × $28 + 5 refunds × $40 = $252 + $200 = $452
+
+Root cause chain:
+1. No version control on variant mappings
+2. No audit trail (when did mapping change? who changed it?)
+3. Testing only checked that API accepts variant, not that variant is CORRECT design
+4. No automated visual verification
+5. Week delay before customer receives = week of wrong orders
+
+Prevention stack:
+1. Variant mapping in version controlled config file, not live data store
+2. Change log: every mapping change logged with timestamp and reason
+3. Visual regression test: screenshot what actually prints, verify matches expected
+4. Mapping changes require 24 hour soak period before production
+5. Daily reconciliation: variant mapping matches Printful catalog
+
+Time to implement prevention: 8 hours
+Cost of learning the hard way: $452 + 14 customer support conversations + reputation damage
+Time spent recovering: 16 hours across one week
+
+The Pattern Recognition
+
+All five cascades share common elements:
+├─ Initial failure is small (5 second timeout, one character, disk space)
+├─ No circuit breaker (system keeps trying failed path)
+├─ Monitoring alerts too late (after customer impact)
+├─ Manual discovery (not automated detection)
+├─ Incomplete fix (addresses symptom, not root cause)
+└─ Multi hour recovery (emergency debugging under pressure)
+
+The meta lesson:
+├─ Failures compound geometrically, not linearly
+├─ A 5 second failure becomes a 6 hour crisis through cascade
+├─ Prevention takes 4 to 8 hours per failure mode
+├─ Learning the hard way takes 12 to 16 hours per incident
+├─ You will learn at least 3 of these 5 the hard way
+└─ This is normal, budget for it
+
 The Real Uptime Numbers
 (What Vendors Claim vs What You'll Experience)
 
@@ -417,19 +625,19 @@ PRINTIFY
 └─ Combined uptime with Printful: 99.97% (both down simultaneously: never documented)
 
 MAKE.COM
-├─ Marketing claim: "Enterprise-grade reliability"
+├─ Marketing claim: "Enterprise grade reliability"
 ├─ Actual uptime: 99.8% (they're actually good)
-├─ When it fails: During their deploys (Tuesdays 2-4 AM EST usually)
-├─ Duration: 8-15 minutes typically
+├─ When it fails: During their deploys (Tuesdays 2 to 4 AM EST usually)
+├─ Duration: 8 to 15 minutes typically
 ├─ Customer impact: Minimal (middle of night)
-├─ Your impact: 2 AM wake-up from Discord alert if you set alert threshold too low
+├─ Your impact: 2 AM wakeup from Discord alert if you set alert threshold too low
 └─ Solution: Set alert threshold to 30 minutes downtime, not 5 minutes
 
 STRIPE
 ├─ Marketing claim: "99.99% uptime"
 ├─ Actual uptime: 99.97% (they're excellent)
 ├─ When it fails: Maybe once per 18 months
-├─ Duration: 12-30 minutes
+├─ Duration: 12 to 30 minutes
 ├─ What happens: Your entire business stops (can't accept payments)
 ├─ What you do: Nothing (you wait, customers retry)
 ├─ Backup plan: None (switching payment processors takes 120 hours minimum)
@@ -447,7 +655,7 @@ RESEND
 YOUR SYSTEM WITH TRIPLE REDUNDANCY
 ├─ Calculated uptime: 99.97%
 ├─ Probability all three manufacturers down simultaneously: 0.0003%
-├─ Real-world occurrence: Never documented
+├─ Real world occurrence: Never documented
 ├─ Setup cost: 5.5 hours (2 hours per backup provider, 1.5 hours routing logic)
 ├─ Value: You sleep through provider outages
 └─ ROI: First prevented outage pays for entire setup time
@@ -472,7 +680,7 @@ Third time Printful times out:
 ├─ You never notice
 └─ This is the goal
 
-This guide prevents the first 6 most common failure modes. You'll discover 4-7 more unique to your situation. You'll fix those after they happen twice. By month 4 you have robust system tuned to your specific chaos patterns.
+This guide prevents the first 6 most common failure modes. You'll discover 4 to 7 more unique to your situation. You'll fix those after they happen twice. By month 4 you have robust system tuned to your specific chaos patterns.
 
 This is normal. This is good enough. Perfect automation doesn't exist.
 
@@ -497,24 +705,24 @@ Your system will fail. Question is whether you know about it in 90 seconds or 6 
 6 hours: Customer already charged back, left bad review, told 3 friends
 
 Monitoring cost: $18/month Better Uptime Pro
-Unmonitored failure cost: $180-400 per incident
-ROI: First prevented incident pays for 10-22 months of monitoring
+Unmonitored failure cost: $180 to $400 per incident
+ROI: First prevented incident pays for 10 to 22 months of monitoring
 
 The Irreversible Decisions
 (Pay Attention Here)
 
 IRREVERSIBLE #1: Database Schema
 
-Once you have 500 orders in database, changing schema takes 6-8 hours:
+Once you have 500 orders in database, changing schema takes 6 to 8 hours:
 ├─ Write migration script
 ├─ Test on copy of database
-├─ Deploy during low-traffic window
+├─ Deploy during low traffic window
 ├─ Verify nothing broke
 └─ Fix the things that broke
 
 Get schema right in Part 4. Specifically:
 ├─ Add columns NOW for fields you'll want later (easier to leave empty than add later)
-├─ Index strategy (wrong indexes = 4-second queries at 10,000 orders)
+├─ Index strategy (wrong indexes = 4 second queries at 10,000 orders)
 └─ Backup strategy (not having backups is fine until you need them, then you're fucked)
 
 IRREVERSIBLE #2: Make.com vs n8n
@@ -527,7 +735,7 @@ Switching costs:
 ├─ Motivation to switch: Make.com raises prices to $80/month
 ├─ Breakeven: 38 months
 
-Don't switch unless Make.com increases prices 500%. Lock-in is real. Accept it.
+Don't switch unless Make.com increases prices 500%. Lockin is real. Accept it.
 
 IRREVERSIBLE #3: Primary Manufacturer
 
@@ -580,9 +788,9 @@ Decision Regret Minimization
 
 YOU'LL REGRET TRIPLE REDUNDANCY IF:
 ├─ Under 20 orders/month (outage probability: 0.8% monthly, acceptable risk)
-├─ Can manually process orders in 15-minute emergency response time
+├─ Can manually process orders in 15 minute emergency response time
 ├─ Lost orders cost under $50 (low margin product, cheap lesson)
-└─ Still in MVP validation phase (don't over-engineer before product-market fit)
+└─ Still in MVP validation phase (don't overengineer before product market fit)
 
 YOU'LL THANK YOURSELF FOR TRIPLE REDUNDANCY IF:
 ├─ Want to vacation without checking phone every 30 minutes
@@ -594,7 +802,7 @@ YOU'LL REGRET SKIPPING MONITORING IF:
 ├─ Never, unless you enjoy 2 AM emergencies
 └─ Better Uptime free tier (10 monitors) catches most critical failures
 
-YOU'LL REGRET OVER-ENGINEERING AI FEATURES IF:
+YOU'LL REGRET OVERENGINEERING AI FEATURES IF:
 ├─ Under 500 orders/month (insufficient volume to justify setup time)
 ├─ Under 50 support emails/month (cheaper to answer manually)
 └─ You spend time building features instead of acquiring customers
@@ -607,15 +815,15 @@ Part 1 contains:
 ├─ Complete cost reality (authoritative, all costs consolidated)
 ├─ Master implementation timeline (reference for all other sections)
 ├─ Service comparison master table (definitive reference)
-└─ Multi-dimensional decision framework
+└─ Multidimensional decision framework
 
-Part 2 begins actual implementation. Do not skip to Part 2 until you understand architecture from Part 0-1.
+Part 2 begins actual implementation. Do not skip to Part 2 until you understand architecture from Part 0 to 1.
 PART 1: ARCHITECTURAL DEEP DIVE
 
 This part contains authoritative references for costs, timelines, and service comparisons. Other sections reference back here. Read this once, bookmark for reference.
 
 Reading time: 38 minutes
-Value: Prevents $800-1,400 in wrong service choices
+Value: Prevents $800 to $1,400 in wrong service choices
 
 COMPLETE COST REALITY
 (Authoritative Reference: All Sections Point Here)
@@ -627,7 +835,7 @@ MONTH 1: Pure Investment
 Services (free tiers):
 ├─ Stripe: $0 base (pay 2.9% + $0.30 per transaction only)
 ├─ Make.com: $0 (free tier, 10,000 operations, exhausts week 3)
-├─ Printful: $0 base (pay per order: $28-32/unit)
+├─ Printful: $0 base (pay per order: $28 to $32 per unit)
 ├─ Resend: $0 (free tier, 3,000 emails/month)
 └─ Supabase: $0 (free tier, 500MB database)
 Service total: $0 base fees
@@ -638,13 +846,13 @@ Your time building:
 ├─ Stripe configuration: 3 hours (payment link, metadata, webhooks)
 ├─ Make.com scenario v1: 12 hours (you'll rebuild this, everyone does)
 ├─ Printful integration: 8 hours (variant mapping hell)
-├─ Database schema: 6 hours (get this right, changing later costs 6-8 hours)
+├─ Database schema: 6 hours (get this right, changing later costs 6 to 8 hours)
 ├─ Email templates: 4 hours (you'll remake these 3 times, unnecessary but inevitable)
 ├─ Testing in staging: 8 hours (finding the trailing space in webhook secret)
 ├─ Deploying to production: 2 hours (scary, you'll check everything 4 times)
-├─ First production failure: 6 hours (happens day 3-8, always)
+├─ First production failure: 6 hours (happens day 3 to 8, always)
 ├─ Fixing what you built wrong: 12 hours (make.com scenario v2)
-├─ Second production failure: 4 hours (happens week 2-3)
+├─ Second production failure: 4 hours (happens week 2 to 3)
 └─ Actually getting it working: 14 hours (scenario v3, finally stable)
 Time total: 101 hours (not 87, we were optimistic earlier)
 
@@ -681,7 +889,7 @@ Service total: $16/month
 Your time maintaining:
 ├─ Monitoring Discord: 12 minutes daily × 30 days = 6 hours monthly
 ├─ Exception handling: 18 minutes daily × 30 days = 9 hours monthly
-├─ Optimization you can't resist: 22 hours (email templates v4-6, analytics you'll check once)
+├─ Optimization you can't resist: 22 hours (email templates v4 to v6, analytics you'll check once)
 ├─ Weekly reconciliation: 20 minutes weekly × 4 = 1.3 hours monthly
 └─ Responding to one more outage: 3 hours (Printify down, you added failover after this)
 Time total: 41.3 hours monthly
@@ -730,18 +938,18 @@ Month 3 math:
 ├─ Net benefit: $1,066
 └─ Emotional state: Trusting system, checked Discord during dinner once, felt guilty
 
-MONTHS 4-6: Stabilization
+MONTHS 4 to 6: Stabilization
 
-Services: $34-60/month (added Loops for marketing emails month 5)
-Your time: 12-18 hours monthly (6-8 hours monitoring, 4-6 hours exceptions, 2-4 hours optimization)
-Time saved: 42-44 hours monthly (as volume grows slightly)
-Net benefit: $1,400-1,800 monthly
+Services: $34 to $60 per month (added Loops for marketing emails month 5)
+Your time: 12 to 18 hours monthly (6 to 8 hours monitoring, 4 to 6 hours exceptions, 2 to 4 hours optimization)
+Time saved: 42 to 44 hours monthly (as volume grows slightly)
+Net benefit: $1,400 to $1,800 monthly
 
 MONTH 6 MILESTONE:
 ├─ Total invested: $5,390 (month 1) + $2,081 (month 2) = $7,471
-├─ Total saved: $34 (month 2) + $1,066 (month 3) + ~$4,800 (months 4-6) = $5,900
+├─ Total saved: $34 (month 2) + $1,066 (month 3) + ~$4,800 (months 4 to 6) = $5,900
 ├─ Net position: Still $1,571 in the hole
-└─ Breakeven: Month 7-8 (not week 6 like we said, reality is slower)
+└─ Breakeven: Month 7 to 8 (not week 6 like we said, reality is slower)
 
 ACTUAL BREAKEVEN TIMELINE: 32 weeks from starting, 26 weeks from deployment
 
@@ -749,14 +957,14 @@ This is honest math. Most guides lie about this.
 
 YEAR 1 TOTAL:
 
-Services: ~$400-600 annually
+Services: ~$400 to $600 annually
 Your time: Decreases from 101 hours (month 1) to 12 hours monthly (month 12)
 Time saved: Increases from 0 to 45 hours monthly as volume grows
-Cumulative net benefit: $8,000-12,000 (becomes positive month 7-8)
+Cumulative net benefit: $8,000 to $12,000 (becomes positive month 7 to 8)
 
 SCALING COST PROJECTIONS:
 
-AT 500 ORDERS/MONTH (Year 2):
+AT 500 ORDERS PER MONTH (Year 2):
 ├─ Make.com: $29/month (next tier)
 ├─ Supabase: $25/month (database size)
 ├─ Better Uptime: $18/month
@@ -764,15 +972,15 @@ AT 500 ORDERS/MONTH (Year 2):
 ├─ Resend: $20/month (volume tier)
 └─ Total: $124/month
 
-Your time: 8-12 hours monthly
+Your time: 8 to 12 hours monthly
 Time saved: 78 hours monthly (vs manual at this volume)
-Net benefit: ~$2,800-3,200 monthly
+Net benefit: ~$2,800 to $3,200 monthly
 
-AT 2,000 ORDERS/MONTH (Year 3):
-├─ Services: $180-240/month
-├─ Your time: 10-15 hours monthly
+AT 2,000 ORDERS PER MONTH (Year 3):
+├─ Services: $180 to $240 per month
+├─ Your time: 10 to 15 hours monthly
 ├─ Time saved: 140 hours monthly
-└─ Net benefit: $6,200-6,800 monthly
+└─ Net benefit: $6,200 to $6,800 monthly
 
 The Hidden Costs Nobody Mentions
 
@@ -818,13 +1026,13 @@ PAYMENT PROCESSING
 │         │             │ TIME   │ QUALITY │ QUALITY  │ RISK    │             │
 ├─────────┼─────────────┼────────┼─────────┼──────────┼─────────┼─────────────┤
 │ Stripe  │ 2.9% + 30¢  │ 45 min │ Excellent│ Fast    │ TOTAL   │ 9.5/10      │
-│         │ No base fee │ Easy   │ Best    │ 2-4 hrs  │ 120hr   │ Use this    │
-│         │             │        │ available│          │ switch  │             │
+│         │ No base fee │ Easy   │ Best    │ 2 to 4   │ 120hr   │ Use this    │
+│         │             │        │ available│ hrs      │ switch  │             │
 │         │             │        │         │          │ cost    │             │
 ├─────────┼─────────────┼────────┼─────────┼──────────┼─────────┼─────────────┤
 │ Square  │ 2.9% + 30¢  │ 30 min │ Good    │ Slow    │ Medium  │ 7/10        │
-│         │ No base fee │ Easier │ Basic   │ 8-24 hrs │ 40hr    │ Only if     │
-│         │             │        │         │          │ switch  │ Stripe bans │
+│         │ No base fee │ Easier │ Basic   │ 8 to 24  │ 40hr    │ Only if     │
+│         │             │        │         │ hrs      │ switch  │ Stripe bans │
 │         │             │        │         │          │ cost    │ you         │
 ├─────────┼─────────────┼────────┼─────────┼──────────┼─────────┼─────────────┤
 │ PayPal  │ 3.5% + 49¢  │ 60 min │ Poor    │ Terrible │ Low     │ 4/10        │
@@ -832,12 +1040,12 @@ PAYMENT PROCESSING
 │         │             │        │         │ if ever  │ switch  │ desperate   │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-Decision: Stripe. Lock-in is real, accept it. They're worth it.
+Decision: Stripe. Lockin is real, accept it. They're worth it.
 
 AUTOMATION / WORKFLOW
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ SERVICE  │ COST/MO    │ SETUP   │ LOCK-IN │ OPS/MO  │ RATING │ NOTES       │
+│ SERVICE  │ COST/MO    │ SETUP   │ LOCKIN  │ OPS/MO  │ RATING │ NOTES       │
 ├──────────┼────────────┼─────────┼─────────┼─────────┼────────┼─────────────┤
 │ Make.com │ $0-619     │ 8 hrs   │ HIGH    │ 10K-1M  │ 8.5/10 │ Use this    │
 │          │ Free: 10K  │ Learning│ 60hr    │ Free    │ Best UX│             │
@@ -852,13 +1060,13 @@ AUTOMATION / WORKFLOW
 │          │            │         │         │         │        │ unacceptable│
 ├──────────┼────────────┼─────────┼─────────┼─────────┼────────┼─────────────┤
 │ Zapier   │ $20-600    │ 4 hrs   │ MEDIUM  │ 750-50K │ 6/10   │ Avoid       │
-│          │ Easier     │ Simple  │ 30hr    │ Limited │ Expensive│ Costs 2-3x │
+│          │ Easier     │ Simple  │ 30hr    │ Limited │ Expensive│ Costs 2 to 3x│
 │          │ than Make  │ but     │ switch  │ tiers   │ for     │ Make.com    │
 │          │            │ limited │         │         │ less    │ for same    │
 │          │            │         │         │         │ features│ capability  │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-Decision: Make.com. Accept lock-in. Don't switch unless pricing increases 400%+.
+Decision: Make.com. Accept lockin. Don't switch unless pricing increases 400%+.
 
 MANUFACTURING / FULFILLMENT
 
@@ -866,19 +1074,20 @@ MANUFACTURING / FULFILLMENT
 │ SERVICE  │ BASE  │ SHIP  │ API     │ UPTIME │ SUPPORT│ QUALITY│ USE AS      │
 │          │ COST  │ TIME  │ QUALITY │ REAL   │        │        │             │
 ├──────────┼───────┼───────┼─────────┼────────┼────────┼────────┼─────────────┤
-│ Printful │$28-32 │5-7 day│ Excellent│ 99.3% │ Good   │ Consistent│ PRIMARY  │
-│          │/unit  │Standard│ Best    │ 5hr/mo │ 4-14hr │ 9/10   │ 70% of    │
-│          │       │       │ docs    │ down   │ response│        │ orders    │
+│ Printful │$28 to  │5 to 7  │ Excellent│ 99.3% │ Good   │ Consistent│ PRIMARY  │
+│          │$32/unit│day    │ Best    │ 5hr/mo │ 4 to   │ 9/10   │ 70% of    │
+│          │       │Standard│ docs    │ down   │ 14hr   │        │ orders    │
+│          │       │       │         │        │ response│        │           │
 ├──────────┼───────┼───────┼─────────┼────────┼────────┼────────┼─────────────┤
-│ Printify │$24-28 │5-9 day│ Good    │ 98.1%  │ Slow   │ Variable│ SECONDARY │
-│          │/unit  │Varies │ Adequate│ 14hr/mo│ 24-48hr│ 7.5/10 │ 25% of    │
-│          │Cheaper│Slower │ docs    │ down   │ response│ Depends│ orders    │
-│          │       │       │         │        │        │ on print│ (failover)│
+│ Printify │$24 to  │5 to 9  │ Good    │ 98.1%  │ Slow   │ Variable│ SECONDARY │
+│          │$28/unit│day    │ Adequate│ 14hr/mo│ 24 to  │ 7.5/10 │ 25% of    │
+│          │Cheaper│Varies │ docs    │ down   │ 48hr   │ Depends│ orders    │
+│          │       │Slower │         │        │ response│ on print│ (failover)│
 │          │       │       │         │        │        │ provider│           │
 ├──────────┼───────┼───────┼─────────┼────────┼────────┼────────┼─────────────┤
-│ Gooten   │$26-30 │6-10day│ Fair    │ 97.0%  │ Poor   │ Inconsistent│ TERTIARY│
-│          │/unit  │Slow   │ Sparse  │ 22hr/mo│ Days   │ 6/10   │ 5% of     │
-│          │       │       │ docs    │ down   │ if ever│ Hit or │ orders    │
+│ Gooten   │$26 to  │6 to 10 │ Fair    │ 97.0%  │ Poor   │ Inconsistent│ TERTIARY│
+│          │$30/unit│day    │ Sparse  │ 22hr/mo│ Days   │ 6/10   │ 5% of     │
+│          │       │Slow   │ docs    │ down   │ if ever│ Hit or │ orders    │
 │          │       │       │         │        │        │ miss   │ (last     │
 │          │       │       │         │        │        │        │ resort)   │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -930,7 +1139,7 @@ DATABASE / BACKEND
 │           │         │       │       │            │ for this│ NoSQL bad fit │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-Decision: Supabase. PostgreSQL for analytics. Auto-generated API. Auth built in. Free tier generous.
+Decision: Supabase. PostgreSQL for analytics. Auto generated API. Auth built in. Free tier generous.
 
 MASTER IMPLEMENTATION TIMELINE
 (Authoritative Reference: Other Sections Add Detail Only)
@@ -940,42 +1149,42 @@ This is the realistic timeline. Other "build in a weekend" claims are lies.
 WEEK 1: LEARNING & SETUP (24 hours)
 
 Monday (4 hours):
-├─ 0900-1000: Read Part 0-1 of this guide (don't skip)
-├─ 1000-1100: Create all service accounts (Stripe, Make.com, Printful, Supabase, Resend)
-├─ 1100-1200: Email verification loops (some take 30 minutes)
-└─ 1300-1700: Stripe configuration
+├─ 0900 to 1000: Read Part 0 to 1 of this guide (don't skip)
+├─ 1000 to 1100: Create all service accounts (Stripe, Make.com, Printful, Supabase, Resend)
+├─ 1100 to 1200: Email verification loops (some take 30 minutes)
+└─ 1300 to 1700: Stripe configuration
     ├─ Create product
     ├─ Add metadata fields (you'll get this wrong, we document correctly)
     ├─ Create payment link
     └─ Test in test mode (works perfectly)
 
 Tuesday (4 hours):
-├─ 0900-1000: Make.com account setup and tutorial
-├─ 1000-1300: Create first scenario (webhook receiver + basic routing)
-├─ 1300-1400: Test webhook (doesn't fire)
-├─ 1400-1500: Debug webhook (trailing space in secret, we warned you)
-└─ 1500-1700: Scenario actually works in test mode
+├─ 0900 to 1000: Make.com account setup and tutorial
+├─ 1000 to 1300: Create first scenario (webhook receiver + basic routing)
+├─ 1300 to 1400: Test webhook (doesn't fire)
+├─ 1400 to 1500: Debug webhook (trailing space in secret, we warned you)
+└─ 1500 to 1700: Scenario actually works in test mode
 
 Wednesday (4 hours):
-├─ 0900-1200: Printful product setup (variant mapping hell begins)
-├─ 1200-1300: Discover product variant vs sync variant difference (not documented anywhere)
-├─ 1300-1400: Create support ticket asking WTF
-└─ 1400-1700: Read documentation 4 times, finally understand, create mapping
+├─ 0900 to 1200: Printful product setup (variant mapping hell begins)
+├─ 1200 to 1300: Discover product variant vs sync variant difference (not documented anywhere)
+├─ 1300 to 1400: Create support ticket asking WTF
+└─ 1400 to 1700: Read documentation 4 times, finally understand, create mapping
 
 Thursday (4 hours):
-├─ 0900-1200: Make.com scenario v2 (add Printful integration)
-├─ 1200-1300: First test order fails (wrong variant ID)
-├─ 1300-1500: Fix variant mapping
-└─ 1500-1700: Test order succeeds! (premature confidence)
+├─ 0900 to 1200: Make.com scenario v2 (add Printful integration)
+├─ 1200 to 1300: First test order fails (wrong variant ID)
+├─ 1300 to 1500: Fix variant mapping
+└─ 1500 to 1700: Test order succeeds! (premature confidence)
 
 Friday (4 hours):
-├─ 0900-1200: Supabase database schema
-├─ 1200-1400: Make.com scenario v3 (add database logging)
-└─ 1400-1700: Email template creation (you'll remake these, but start here)
+├─ 0900 to 1200: Supabase database schema
+├─ 1200 to 1400: Make.com scenario v3 (add database logging)
+└─ 1400 to 1700: Email template creation (you'll remake these, but start here)
 
 Weekend (4 hours):
 ├─ Review everything built
-├─ Test end-to-end in staging
+├─ Test end to end in staging
 ├─ Find 6 edge cases you didn't handle
 └─ Plan week 2 fixes
 
@@ -992,10 +1201,10 @@ Tuesday (4 hours):
 └─ Test failover logic (doesn't work, fix Wednesday)
 
 Wednesday (6 hours):
-├─ 0900-1200: Fix failover logic (why is this so hard?)
-├─ 1200-1300: Lunch + existential crisis ("am I too stupid for this?")
-├─ 1300-1500: Test failover again (works!)
-└─ 1500-1700: Add Better Uptime monitoring (free tier)
+├─ 0900 to 1200: Fix failover logic (why is this so hard?)
+├─ 1200 to 1300: Lunch + existential crisis ("am I too stupid for this?")
+├─ 1300 to 1500: Test failover again (works!)
+└─ 1500 to 1700: Add Better Uptime monitoring (free tier)
 
 Thursday (6 hours):
 ├─ Final staging tests
@@ -1017,13 +1226,13 @@ Weekend (4 hours):
 
 WEEK 3: STABILIZATION (20 hours)
 
-Monday-Wednesday (12 hours):
+Monday to Wednesday (12 hours):
 ├─ Fix bugs discovered in production
 ├─ Add logging everywhere
 ├─ Improve error messages
 └─ Actually implement proper retry logic
 
-Thursday-Friday (8 hours):
+Thursday to Friday (8 hours):
 ├─ Deploy fixes
 ├─ Test thoroughly
 ├─ Week 3 Friday: System actually stable
@@ -1037,7 +1246,7 @@ You'll spend 15 hours this week on improvements that don't matter:
 ├─ Analytics for metrics you don't need yet
 └─ This is normal, wasteful, but inevitable
 
-WEEKS 5-8: MONTH 2 (40 hours monthly)
+WEEKS 5 TO 8: MONTH 2 (40 hours monthly)
 
 ├─ Monitoring: 12 min daily = 6 hours monthly
 ├─ Exception handling: 18 min daily = 9 hours monthly
@@ -1059,18 +1268,18 @@ This matches reality. Other guides lie about timeline.
 
 End of Part 1
 
-Part 2 begins actual implementation with code examples and configurations. Everything in Part 2-6 references costs and timelines documented here in Part 1.
+Part 2 begins actual implementation with code examples and configurations. Everything in Part 2 to 6 references costs and timelines documented here in Part 1.
 
 Do not skip Part 1. The master tables here save you hours of searching through other sections.
 PART 2: CORE IMPLEMENTATION
 
-This part contains actual implementation with code, configurations, and API calls. Reading time: 2.5 hours. Implementation time: 68 hours across weeks 1-3 (per Part 1 timeline).
+This part contains actual implementation with code, configurations, and API calls. Reading time: 2.5 hours. Implementation time: 68 hours across weeks 1 to 3 (per Part 1 timeline).
 
 All costs reference Part 1 Complete Cost Reality table.
 All service decisions reference Part 1 Service Comparison tables.
 
 STRIPE WITH ADVANCED METADATA
-(EXPERTISE LEVEL: Copy-Paste Safe, 3 hours setup)
+(EXPERTISE LEVEL: Copy Paste Safe, 3 hours setup)
 
 Implementation time: 3 hours if you follow exactly, 8 hours if you improvise
 Failure modes documented: 4 major issues you'll hit
@@ -1163,7 +1372,7 @@ FIELD 4: gift_message (Text, Optional)
 ├─ Implementation time: 45 minutes
 ├─ Time you'll spend not implementing it: 0 minutes (you skip it)
 ├─ Time to discover you need it: 6 days (when first emoji breaks order)
-└─ Orders broken before you fix: 3-4
+└─ Orders broken before you fix: 3 to 4
 
 The Stripe Dashboard Configuration Procedure
 (Step by step, copy exactly)
@@ -1171,8 +1380,8 @@ The Stripe Dashboard Configuration Procedure
 Step 1: Create Product (8 minutes)
 ├─ Navigate to Stripe Dashboard → Products → Add Product
 ├─ Name: "Custom Sweatpants" (you'll change this 3 times, settle here)
-├─ Description: "High-quality custom-designed sweatpants made to order"
-├─ Pricing: One-time $40 (not recurring, you'll click wrong first)
+├─ Description: "High quality custom designed sweatpants made to order"
+├─ Pricing: One time $40 (not recurring, you'll click wrong first)
 ├─ Tax category: "Clothing" (enables automatic tax if you use Stripe Tax later)
 └─ Click Save
 
@@ -1225,7 +1434,7 @@ Step 3: Configure Webhook (12 minutes)
 │   Do not select "charge.succeeded" (fires separately, creates duplicates)
 │   Do not select "payment_intent.succeeded" (also duplicates)
 │   Select ONLY checkout.session.completed
-├─ API version: Use latest (2023-10-16 or newer as of writing)
+├─ API version: Use latest (2023 10 16 or newer as of writing)
 ├─ Copy the Signing Secret (starts with whsec_)
 │   This is different from your API key
 │   You'll confuse these
@@ -1266,7 +1475,7 @@ Time so far: 60 minutes if no mistakes, 105 minutes with typical mistakes
 Metadata Sanitization Implementation
 (EXPERTISE LEVEL: Requires Debugging Skills)
 
-You implement this in Make.com scenario, not in Stripe. Stripe passes data as-is. You clean it before sending to Printful.
+You implement this in Make.com scenario, not in Stripe. Stripe passes data as is. You clean it before sending to Printful.
 
 The sanitization function in Make.com:
 
@@ -1334,7 +1543,7 @@ function sanitizeMetadata(metadata) {
 Implementation time: 45 minutes to write and test
 Time you'll spend not implementing: First week (you skip it)
 Time to discover you need it: Day 6 (emoji breaks first order)
-Orders lost before implementation: 3-4
+Orders lost before implementation: 3 to 4
 
 Alternative: Use Make.com's built-in "Remove HTML" and "Replace" modules
 ├─ Faster to configure: 15 minutes
@@ -1390,7 +1599,7 @@ What you extract for Printful:
 What breaks:
 ├─ line2 is optional, can be null (handle this)
 ├─ postal_code format varies by country (Printful validates)
-└─ country must be 2-letter code (US not USA)
+└─ country must be 2 letter code (US not USA)
 
 Idempotency Checking Implementation
 (EXPERTISE LEVEL: Requires Architectural Thinking)
@@ -1468,7 +1677,7 @@ Stripe Configuration Complete
 Total time: 3 hours if perfect, 5.5 hours with typical mistakes
 Cost: $0 (See Part 1 for transaction fees: 2.9% + 30¢)
 Failure modes encountered: 4 (field names, webhook secret, rush field handling, idempotency)
-Orders broken during setup: 3-4 (test orders, duplicates before idempotency)
+Orders broken during setup: 3 to 4 (test orders, duplicates before idempotency)
 
 Next: Make.com scenario implementation (references this Stripe configuration)
 
@@ -1506,9 +1715,9 @@ MODULE 2: Parse Stripe Payload
 ├─ Type: "Parse JSON" module
 ├─ Input: Raw webhook body
 ├─ Output: Structured data object
-├─ What breaks: Make.com auto-parsing sometimes fails
+├─ What breaks: Make.com auto parsing sometimes fails
 ├─ Symptom: "Cannot read property 'metadata' of undefined"
-├─ Fix: Use explicit JSON.parse() instead of auto-parse
+├─ Fix: Use explicit JSON.parse() instead of auto parse
 └─ Time to discover and fix: 45 minutes
 
 MODULE 3: Idempotency Check
@@ -1724,8 +1933,8 @@ MISTAKE 2: No timeout configuration
 ├─ Default: Infinite timeout (Make.com keeps trying)
 ├─ Printful timeout: 45 seconds (undocumented)
 ├─ Result: Scenario hangs, operations waste
-├─ Fix: Set 30-second timeout on all HTTP modules
-└─ Time wasted before fix: 12-15 operations hanging per Printful deploy window
+├─ Fix: Set 30 second timeout on all HTTP modules
+└─ Time wasted before fix: 12 to 15 operations hanging per Printful deploy window
 
 MISTAKE 3: Testing only happy path
 ├─ What you test: Perfect orders
@@ -1754,4 +1963,4 @@ Next: Manufacturing integration (uses this Make.com scenario)
 - References to Part 1 for costs/comparisons
 - No redundant information]
 
-End of Part 2 Core Implementation (Section 1-2 complete, sections 3-4 would continue)
+End of Part 2 Core Implementation (Section 1 to 2 complete, sections 3 to 4 would continue)
