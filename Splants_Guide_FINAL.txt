@@ -1,6 +1,6 @@
 SPLANTS AUTOMATION GUIDE
 Complete Architect's Blueprint: From Manual Operations to Production Automation
-Version 3.0 - Comprehensive Edition
+Version 3.0, Comprehensive Edition
 
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1038,28 +1038,28 @@ The Progressive Enhancement Philosophy:
 
 Build the smallest thing that solves today's problem. When that thing breaks or proves inadequate, evolve it. Repeat.
 
-Stage 1 - MVO (Minimum Viable Operations): Manual Operations with Tools
+Stage 1, MVO (Minimum Viable Operations): Manual Operations with Tools
 Goal: Process orders faster than pure manual, establish workflow
 Implementation: Stripe payment link, manual entry to Printful, spreadsheet tracking
 Time to build: 4 to 6 hours
 Handles: 1 to 50 orders per month
 Pain point: Still doing manual entry, but with better tools
 
-Stage 2 - Basic Automation: Core Flow Only
+Stage 2, Basic Automation: Core Flow Only
 Goal: Orders process automatically, no manual entry
 Implementation: Stripe webhook → Make.com → Printful, basic error logging
 Time to build: 20 to 25 hours
 Handles: 50 to 200 orders per month
 Pain point: Failures require manual intervention, no redundancy
 
-Stage 3 - Production Ready: Reliability and Redundancy
+Stage 3, Production Ready: Reliability and Redundancy
 Goal: System handles failures gracefully, rare manual intervention
 Implementation: Add Printify/Gooten failover, idempotency, retry logic, alerting
 Time to build: 35 to 45 hours
 Handles: 200 to 1,000 orders per month
 Pain point: Limited analytics, manual optimization
 
-Stage 4 - Intelligence Layer: Analytics and Optimization
+Stage 4, Intelligence Layer: Analytics and Optimization
 Goal: System self optimizes, provides business insights
 Implementation: Add analytics, cost optimization, performance monitoring
 Time to build: 25 to 30 hours
@@ -2091,8 +2091,8 @@ DIAGRAM 1: Complete System Architecture (High Level)
 │   │                       │               │               │              │ │
 │   │  ┌────────────────────┴────┐   ┌──────┴──────┐   ┌───┴─────────┐   │ │
 │   │  │ WEBHOOK VALIDATION      │   │  IDEMPOTENCY │   │  VARIANT    │   │ │
-│   │  │  - Signature check      │   │   CHECKING   │   │  MAPPING    │   │ │
-│   │  │  - Payload validation   │   │  (Supabase)  │   │ (Supabase)  │   │ │
+│   │  │ , Signature check      │   │   CHECKING   │   │  MAPPING    │   │ │
+│   │  │ , Payload validation   │   │  (Supabase)  │   │ (Supabase)  │   │ │
 │   │  └─────────────────────────┘   └──────────────┘   └─────────────┘   │ │
 │   │                       │               │               │              │ │
 │   └───────────────────────┴───────────────┴───────────────┴──────────────┘ │
@@ -2113,9 +2113,9 @@ DIAGRAM 1: Complete System Architecture (High Level)
 │                   │                       │                       │        │
 │   ┌───────────────┴───────────┐   ┌───────┴──────────┐   ┌───────┴──────┐│
 │   │  CREATE ORDER             │   │  CREATE ORDER    │   │  CREATE ORDER││
-│   │  - Retry logic (3x)       │   │  - Retry (2x)    │   │  - Retry (2x)││
-│   │  - Exponential backoff    │   │  - 4s, 8s delays │   │  - 4s, 8s    ││
-│   │  - Circuit breaker        │   │                  │   │              ││
+│   │ , Retry logic (3x)       │   │ , Retry (2x)    │   │ , Retry (2x)││
+│   │ , Exponential backoff    │   │ , 4s, 8s delays │   │ , 4s, 8s    ││
+│   │ , Circuit breaker        │   │                  │   │              ││
 │   └───────────────────────────┘   └──────────────────┘   └──────────────┘│
 │                   │                       │                       │        │
 │                   └───────────────────────┴───────────────────────┘        │
@@ -2135,15 +2135,15 @@ DIAGRAM 1: Complete System Architecture (High Level)
 │  table          table                   table            table              │
 │                                                                             │
 │                              [BETTER UPTIME MONITORING]                     │
-│                   - Endpoint health checks (30s interval)                   │
-│                   - API response time tracking                              │
-│                   - Alert on 2 consecutive failures                         │
+│                  , Endpoint health checks (30s interval)                   │
+│                  , API response time tracking                              │
+│                  , Alert on 2 consecutive failures                         │
 │                                           │                                 │
 │                                           ↓                                 │
 │                              [DISCORD WEBHOOKS]                             │
-│                   - #alerts-critical (immediate notifications)              │
-│                   - #orders-log (successful order log)                      │
-│                   - #analytics-daily (daily summaries)                      │
+│                  , #alerts-critical (immediate notifications)              │
+│                  , #orders-log (successful order log)                      │
+│                  , #analytics-daily (daily summaries)                      │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -2290,10 +2290,10 @@ END (Manual Intervention Required)      │
                                             END
 
 Processing Time:
-  - Best case (Printful success first attempt): 3.2 seconds
-  - Typical case (Printful success with one retry): 5.8 seconds
-  - Worst case automated (failover to tertiary): 153 seconds
-  - Manual queue (all providers failed): Indefinite, human required
+ , Best case (Printful success first attempt): 3.2 seconds
+ , Typical case (Printful success with one retry): 5.8 seconds
+ , Worst case automated (failover to tertiary): 153 seconds
+ , Manual queue (all providers failed): Indefinite, human required
 
 DIAGRAM 3: Database Schema (Supabase PostgreSQL)
 
@@ -2482,21 +2482,21 @@ Check Failure Type:
   │
 ┌──────────────────────────────────────────────────────────────────────┐
 │ MANUAL QUEUE                                                         │
-│   - Log complete failure chain                                       │
-│   - Store order data                                                 │
-│   - Send CRITICAL alert to Discord                                   │
-│   - Email admin with order details                                   │
-│   - Customer receives "Processing" email                             │
-│   - Manual processing required within 2 hours                        │
+│  , Log complete failure chain                                       │
+│  , Store order data                                                 │
+│  , Send CRITICAL alert to Discord                                   │
+│  , Email admin with order details                                   │
+│  , Customer receives "Processing" email                             │
+│  , Manual processing required within 2 hours                        │
 └──────────────────────────────────────────────────────────────────────┘
   │
   ↓
 [Human Intervention Required]
 
 Failover Metrics:
-  - Probability of needing Secondary: 1.8% of orders
-  - Probability of needing Tertiary: 0.04% of orders
-  - Probability of Manual Queue: 0.001% of orders (1 in 100,000)
+ , Probability of needing Secondary: 1.8% of orders
+ , Probability of needing Tertiary: 0.04% of orders
+ , Probability of Manual Queue: 0.001% of orders (1 in 100,000)
 
 Combined System Reliability:
   Primary alone: 98.2%
@@ -2567,9 +2567,9 @@ DIAGRAM 5: Monitoring and Alerting Architecture
 └─────────────────────────────────────────────────────────────────────────────┘
 
 Alert Frequency Limits (Prevent Fatigue):
-  - CRITICAL: No rate limit (always send)
-  - WARNING: Max 1 per hour per issue type
-  - INFO: Batch and send every 4 hours
+ , CRITICAL: No rate limit (always send)
+ , WARNING: Max 1 per hour per issue type
+ , INFO: Batch and send every 4 hours
 
 [Continuing with Section 0.4: Irreversible Decisions Matrix...]
 
@@ -2587,11 +2587,11 @@ The Choice: Stripe vs PayPal vs Square vs Braintree vs Others
 
 Why This Matters:
 Your payment processor holds customer payment data, transaction history, and payout information. Changing processors requires:
-  - Migrating customer data (if allowed)
-  - Rebuilding webhook integrations
-  - Updating all payment links and checkout flows
-  - Communicating changes to customers (trust impact)
-  - Potential revenue loss during migration (customers see new processor, some abandon)
+ , Migrating customer data (if allowed)
+ , Rebuilding webhook integrations
+ , Updating all payment links and checkout flows
+ , Communicating changes to customers (trust impact)
+ , Potential revenue loss during migration (customers see new processor, some abandon)
 
 Lock-in Severity: HIGH (7/10)
 
@@ -2619,9 +2619,9 @@ Alternatives:
   Braintree: Owned by PayPal, good API, similar pricing to Stripe
 
 Decision Trigger: Use Stripe unless:
-  - Your target market strongly prefers PayPal (some international markets)
-  - You're processing >$1M annually (negotiate custom rates with multiple providers)
-  - You're in a high-risk industry (adult, gambling, CBD) where Stripe may decline you
+ , Your target market strongly prefers PayPal (some international markets)
+ , You're processing >$1M annually (negotiate custom rates with multiple providers)
+ , You're in a high-risk industry (adult, gambling, CBD) where Stripe may decline you
 
 Mitigation Strategy: Abstract payment processing behind an interface in your code
   (Not applicable here since we use Make.com, but principle remains: minimize direct dependencies)
@@ -2632,11 +2632,11 @@ The Choice: Make.com vs Zapier vs n8n vs Custom Code
 
 Why This Matters:
 The orchestration platform becomes the central nervous system of your automation. All business logic lives here. Your scenarios encode:
-  - Webhook handling
-  - API call sequences
-  - Error handling and retry logic
-  - Failover decision making
-  - Logging and monitoring
+ , Webhook handling
+ , API call sequences
+ , Error handling and retry logic
+ , Failover decision making
+ , Logging and monitoring
 
 Changing platforms means rebuilding all of this logic from scratch.
 
@@ -2667,13 +2667,13 @@ Alternatives:
   Custom Code: Maximum flexibility, requires software development skills, no lock-in
 
 Decision Trigger: Use Make.com unless:
-  - You're a software developer comfortable with Node.js/Python (consider custom code)
-  - You're processing 5,000+ orders/month (cost makes custom code worthwhile)
-  - You need absolute control over infrastructure (consider n8n self-hosted)
+ , You're a software developer comfortable with Node.js/Python (consider custom code)
+ , You're processing 5,000+ orders/month (cost makes custom code worthwhile)
+ , You need absolute control over infrastructure (consider n8n self-hosted)
 
 Mitigation Strategy: 
-  - Document all scenarios thoroughly (screenshots, logic descriptions)
-  - Export scenario JSON monthly (doesn't fully transfer but provides backup)
+ , Document all scenarios thoroughly (screenshots, logic descriptions)
+ , Export scenario JSON monthly (doesn't fully transfer but provides backup)
   - Consider migration at 5,000 orders/month or $100/month Make.com cost
 
 Accept This Lock-in: Yes, for businesses processing under 5,000 orders/month. The productivity gain from visual workflows outweighs the lock-in risk.
@@ -2684,18 +2684,18 @@ The Choice: Printful vs Printify vs Gooten vs Gelato vs Others
 
 Why This Matters:
 Your primary manufacturer relationship determines:
-  - Product quality (directly impacts customer satisfaction)
-  - Shipping speed (impacts customer experience)
-  - Product catalog (what you can sell)
-  - Pricing (your margins)
-  - Reliability (uptime and consistency)
+ , Product quality (directly impacts customer satisfaction)
+ , Shipping speed (impacts customer experience)
+ , Product catalog (what you can sell)
+ , Pricing (your margins)
+ , Reliability (uptime and consistency)
 
 Changing primary manufacturers requires:
-  - Re-uploading entire product catalog
-  - Remapping all variants
-  - Potentially re-photographing products (mockup differences)
-  - Testing quality on new provider
-  - Accepting potential quality variance
+ , Re-uploading entire product catalog
+ , Remapping all variants
+ , Potentially re-photographing products (mockup differences)
+ , Testing quality on new provider
+ , Accepting potential quality variance
 
 Lock-in Severity: MODERATE (5/10)
 
@@ -2729,14 +2729,14 @@ Alternatives:
   Gelato: Strong in Europe, good for international, premium pricing
 
 Decision Trigger: Use multi-provider strategy (Printful + backups) unless:
-  - You're in MVP mode and want absolute simplicity (Printful only)
-  - You have very high margins and don't care about provider outages (single provider acceptable)
-  - Your market is primarily EU (consider Gelato primary)
+ , You're in MVP mode and want absolute simplicity (Printful only)
+ , You have very high margins and don't care about provider outages (single provider acceptable)
+ , Your market is primarily EU (consider Gelato primary)
 
 Mitigation Strategy: 
-  - Build failover from day one (prevents emergency scrambling)
-  - Test backup providers quarterly (place real orders, verify quality)
-  - Monitor provider status pages and community forums
+ , Build failover from day one (prevents emergency scrambling)
+ , Test backup providers quarterly (place real orders, verify quality)
+ , Monitor provider status pages and community forums
 
 Accept This Lock-in: No, explicitly avoid by implementing redundancy.
 
@@ -2746,18 +2746,18 @@ The Choice: PostgreSQL (Supabase) vs MySQL vs MongoDB vs DynamoDB vs Firebase
 
 Why This Matters:
 Your database choice determines:
-  - Query capabilities (relational vs document vs key-value)
-  - Scaling characteristics
-  - Operational complexity
-  - Cost structure
-  - Data portability
+ , Query capabilities (relational vs document vs key-value)
+ , Scaling characteristics
+ , Operational complexity
+ , Cost structure
+ , Data portability
 
 Migrating databases requires:
-  - Schema conversion
-  - Data export and import
-  - Query rewriting
-  - Integration updates
-  - Testing and validation
+ , Schema conversion
+ , Data export and import
+ , Query rewriting
+ , Integration updates
+ , Testing and validation
 
 Lock-in Severity: LOW TO MODERATE (4/10)
 
@@ -2786,14 +2786,14 @@ Alternatives:
   Custom PostgreSQL: Maximum control, requires DevOps, more complex
 
 Decision Trigger: Use Supabase (managed PostgreSQL) unless:
-  - You're experienced with MySQL and prefer it (equivalent choice)
-  - You need absolute control and have DevOps skills (self-hosted PostgreSQL)
-  - You're already using Firebase for other services (ecosystem benefit)
+ , You're experienced with MySQL and prefer it (equivalent choice)
+ , You need absolute control and have DevOps skills (self-hosted PostgreSQL)
+ , You're already using Firebase for other services (ecosystem benefit)
 
 Mitigation Strategy:
-  - Use standard SQL (avoid Supabase-specific functions when possible)
-  - Export database weekly (automated backups)
-  - Design schema to be portable (no proprietary extensions)
+ , Use standard SQL (avoid Supabase-specific functions when possible)
+ , Export database weekly (automated backups)
+ , Design schema to be portable (no proprietary extensions)
 
 Accept This Lock-in: Yes to PostgreSQL (good choice), No to any specific host (keep portable).
 
@@ -2803,17 +2803,17 @@ The Choice: Resend vs SendGrid vs AWS SES vs Mailgun vs Postmark
 
 Why This Matters:
 Email deliverability is critical for customer experience. Your ESP determines:
-  - Whether emails reach inbox vs spam
-  - Sending reputation
-  - Bounce and complaint handling
-  - Cost per email
-  - API reliability
+ , Whether emails reach inbox vs spam
+ , Sending reputation
+ , Bounce and complaint handling
+ , Cost per email
+ , API reliability
 
 Migrating ESPs requires:
-  - Domain authentication transfer (SPF, DKIM records)
-  - Template migration
-  - API integration updates
-  - Reputation rebuild (new ESP = fresh sender reputation)
+ , Domain authentication transfer (SPF, DKIM records)
+ , Template migration
+ , API integration updates
+ , Reputation rebuild (new ESP = fresh sender reputation)
 
 Lock-in Severity: LOW (3/10)
 
@@ -2841,14 +2841,14 @@ Alternatives:
   Mailgun: Good API, moderate pricing, owned by Mailchimp
 
 Decision Trigger: Use Resend unless:
-  - You're already heavily invested in AWS (use SES)
-  - You need absolute maximum deliverability and budget allows (use Postmark)
-  - You're sending 100K+ emails/month (cost optimization becomes relevant)
+ , You're already heavily invested in AWS (use SES)
+ , You need absolute maximum deliverability and budget allows (use Postmark)
+ , You're sending 100K+ emails/month (cost optimization becomes relevant)
 
 Mitigation Strategy:
-  - Keep email templates simple and portable
-  - Abstract ESP behind consistent interface (if using custom code)
-  - Monitor deliverability metrics across any provider
+ , Keep email templates simple and portable
+ , Abstract ESP behind consistent interface (if using custom code)
+ , Monitor deliverability metrics across any provider
 
 Accept This Lock-in: No significant lock-in, easily reversible decision.
 
@@ -2858,10 +2858,10 @@ The Choice: Better Uptime vs Pingdom vs UptimeRobot vs Datadog vs Custom
 
 Why This Matters:
 Monitoring is your early warning system. Inadequate monitoring means discovering issues via customer complaints. Your monitoring service determines:
-  - Detection speed (how quickly you know about failures)
-  - Alert reliability (do alerts actually reach you?)
-  - Historical data (for post-mortems and optimization)
-  - Cost
+ , Detection speed (how quickly you know about failures)
+ , Alert reliability (do alerts actually reach you?)
+ , Historical data (for post-mortems and optimization)
+ , Cost
 
 Migrating monitoring is low-risk but time-consuming.
 
@@ -2891,12 +2891,12 @@ Alternatives:
   Custom: Healthcheck scripts + PagerDuty, maximum control
 
 Decision Trigger: Use Better Uptime unless:
-  - Budget is absolute constraint (use UptimeRobot free tier)
-  - You're monitoring 100+ endpoints (consider Datadog)
-  - You need custom metrics and APM (use Datadog or custom)
+ , Budget is absolute constraint (use UptimeRobot free tier)
+ , You're monitoring 100+ endpoints (consider Datadog)
+ , You need custom metrics and APM (use Datadog or custom)
 
 Mitigation Strategy:
-  - No mitigation needed, this decision is easily reversible
+ , No mitigation needed, this decision is easily reversible
 
 Accept This Lock-in: No lock-in, change freely if needs evolve.
 
@@ -3349,8 +3349,8 @@ Lost Orders (Learning Phase):
 **Total: $8,275 to $14,170**
 
 This is the real cost of building the system. Compare to hiring developer:
-  - Contractor at $100/hour: $15,900 to $26,900 (159-269 hours)
-  - Agency quote: $25,000 to $45,000 typical
+ , Contractor at $100/hour: $15,900 to $26,900 (159-269 hours)
+ , Agency quote: $25,000 to $45,000 typical
 
 Building yourself is cheaper but requires your time investment.
 
@@ -4399,7 +4399,7 @@ Step 1: Create Product and Payment Link (30 minutes)
   Price: Your selling price (e.g., $35.00)
   Tax behavior: "Taxable" (Stripe will calculate if enabled)
 
-1.4 Add metadata fields (CRITICAL - these pass to your automation):
+1.4 Add metadata fields (CRITICAL, these pass to your automation):
   Click "Add metadata"
   Add fields:
     product_sku: Your internal SKU (e.g., "geometric_tshirt_001")
@@ -4443,7 +4443,7 @@ Step 2: Configure Webhooks (45 minutes)
   Copy the secret that starts with "whsec_"
   CRITICAL: Check for trailing spaces (common copy/paste error)
   Store in password manager immediately
-  Label clearly: "Stripe Webhook Signing Secret - PRODUCTION"
+  Label clearly: "Stripe Webhook Signing Secret, PRODUCTION"
 
 2.8 Test webhook (after Make.com setup):
   Use "Send test webhook" button
@@ -5172,10 +5172,10 @@ Configure Route 1 (New Order):
 1. Click route to edit
 2. Label: "New Order (Process)"
 3. Filter configuration:
-   - Field: Length of array from Supabase
+  , Field: Length of array from Supabase
    - In Make.com syntax: {{length(2.array)}}
-   - Operator: Numeric equals
-   - Value: 0
+  , Operator: Numeric equals
+  , Value: 0
 4. Explanation: If query returned 0 results, payment_intent is new
 5. Click "OK"
 
@@ -5183,9 +5183,9 @@ Add Route 2 (Duplicate):
 1. Click "+ Add route" button on router
 2. Label: "Duplicate (Skip)"  
 3. Filter configuration:
-   - Field: {{length(2.array)}}
-   - Operator: Numeric greater than
-   - Value: 0
+  , Field: {{length(2.array)}}
+  , Operator: Numeric greater than
+  , Value: 0
 4. Explanation: If query returned 1+ results, payment_intent exists (duplicate)
 5. Click "OK"
 
@@ -5736,51 +5736,51 @@ Test 1: End to End Success Path
 2. Complete checkout with valid test card (4242 4242 4242 4242)
 3. Stripe sends webhook to Make.com
 4. Observe execution:
-   - Signature validation: Pass
-   - Idempotency check: New order (no duplicate)
-   - Metadata extraction: All fields populated
-   - Filter: Pass
+  , Signature validation: Pass
+  , Idempotency check: New order (no duplicate)
+  , Metadata extraction: All fields populated
+  , Filter: Pass
 5. Verify: Order ready for fulfillment processing (Section 2.3)
 
 Test 2: Duplicate Webhook Handling
 1. Find test webhook in Stripe dashboard
 2. Click "Resend" to send duplicate
 3. Observe execution:
-   - Signature validation: Pass
-   - Idempotency check: Duplicate detected
-   - Route: Takes duplicate path
-   - analytics_events: New row inserted
-   - Response: 200 OK to Stripe
+  , Signature validation: Pass
+  , Idempotency check: Duplicate detected
+  , Route: Takes duplicate path
+  , analytics_events: New row inserted
+  , Response: 200 OK to Stripe
 4. Verify: Only 1 order exists in database
 
 Test 3: Missing Metadata Handling
 1. Create test webhook with incomplete shipping data (requires Stripe CLI or API)
 2. Send to Make.com
 3. Observe execution:
-   - Signature validation: Pass
-   - Idempotency check: New order
-   - Metadata extraction: Some fields empty
-   - Filter: Fail
-   - manual_queue: New row inserted
-   - Discord: Alert sent
+  , Signature validation: Pass
+  , Idempotency check: New order
+  , Metadata extraction: Some fields empty
+  , Filter: Fail
+  , manual_queue: New row inserted
+  , Discord: Alert sent
 4. Verify: Order in manual queue, ready for manual processing
 
 Test 4: Invalid Signature Rejection
 1. Use curl to POST to webhook URL without Stripe-Signature header
 2. Observe execution:
-   - Signature validation: Fail
-   - Scenario: Stops immediately
-   - Response: 401 Unauthorized
+  , Signature validation: Fail
+  , Scenario: Stops immediately
+  , Response: 401 Unauthorized
 3. Verify: No database entries created, request properly rejected
 
 Test 5: High Volume Simulation (Optional but Recommended)
 1. Use Stripe CLI to send 50 test webhooks rapidly
 2. Observe Make.com execution log
 3. Check for:
-   - All webhooks processed successfully
-   - No duplicate orders created
-   - Processing time remains <2 seconds per webhook
-   - No errors or timeouts
+  , All webhooks processed successfully
+  , No duplicate orders created
+  , Processing time remains <2 seconds per webhook
+  , No errors or timeouts
 4. Verify: System handles burst traffic without issues
 
 If all 5 tests pass: Section 2.2 complete, proceed to Section 2.3.
@@ -6160,7 +6160,7 @@ After database insert, add:
 Configuration:
   From: orders@yourdomain.com
   To: {{customer_email}}
-  Subject: Order Confirmation - {{product_name}}
+  Subject: Order Confirmation, {{product_name}}
   
 Body:
 ```
@@ -6423,7 +6423,7 @@ You now have a complete, production-ready core implementation.
 Next: Parts 3-7 cover advanced features (analytics, customer experience, monitoring, scaling)
 ═══════════════════════════════════════════════════════════════════════════════
 
-PART 2: COMPLETE IMPLEMENTATION - FINAL MILESTONE
+PART 2: COMPLETE IMPLEMENTATION, FINAL MILESTONE
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎉 PART 2 COMPLETE: Core Implementation Finished
@@ -6547,11 +6547,11 @@ Value: Cost reduction, performance improvement, sustainable growth
 GUIDE COMPLETION STATUS
 
 This comprehensive guide now includes:
-  ✓ Complete Introduction (5,500 words) - emotional journey, prerequisites
-  ✓ Complete Part 0 (18,000 words) - architectural blueprint with 5 sections
-  ✓ Complete Part 1 (7,000 words) - implementation plan with costs, timeline, comparisons
-  ✓ Part 2 Foundation (3,000+ words) - prescriptive v3 build instructions (foundation services)
-  ✓ Parts 3-7 Enhanced Summaries - clear guidance on when/why/how to add each component
+  ✓ Complete Introduction (5,500 words), emotional journey, prerequisites
+  ✓ Complete Part 0 (18,000 words), architectural blueprint with 5 sections
+  ✓ Complete Part 1 (7,000 words), implementation plan with costs, timeline, comparisons
+  ✓ Part 2 Foundation (3,000+ words), prescriptive v3 build instructions (foundation services)
+  ✓ Parts 3-7 Enhanced Summaries, clear guidance on when/why/how to add each component
 
 Total Current Word Count: ~33,500 words
 Target Achievement: 56-67% toward 50-60k target
