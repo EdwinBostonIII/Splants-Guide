@@ -162,7 +162,7 @@ Review analysis counts, inspect the cleaned file, then merge changes manually so
 - Run the cleaner on any section before merging.
 - Maintain a running spreadsheet or tracker mirroring `INTEGRATION_CHECKLIST.md` statuses.
 - Use Git branches per part to isolate rewrites and maintain review history.
-- Add manual lint steps: search for " — ", " - ", and other violations before marking sections complete.
+- Add manual lint steps: search for " — ", the literal space-hyphen-space pattern, and other violations before marking sections complete.
 
 ═══════════════════════════════════════════════════════════════════════════════
 
