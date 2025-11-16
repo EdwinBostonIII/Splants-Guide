@@ -1688,6 +1688,8 @@ A: Search Supabase orders table by customer email (15 second answer)
 Q: Why did an order fail?
 A: Check Make.com execution history for that timestamp (45 second answer)
 
+🔍 Make.com Search Tip: In execution history, use filters to find specific orders: Click 'Advanced search' → Filter by 'Variables' → Enter payment_intent_id or customer_email. Way faster than scrolling through 100+ executions. Add bookmark: 'Failed executions only' filter for daily monitoring.
+
 Q: Is Printful currently down?
 A: Check Better Uptime status page (10 second answer)
 
@@ -6097,6 +6099,8 @@ Frequency: 0.1%
 Handling: Make.com rejects automatically, returns 401, scenario stops
 Recovery: Automatic (Stripe retries with correct signature)
 
+🔍 Debugging Tip: If webhooks fail validation, check: (1) Webhook secret copied correctly from Stripe (no extra spaces), (2) You're using matching Stripe account (test vs live), (3) Webhook URL matches exactly (HTTPS, no typos). 95% of validation failures are copy-paste errors.
+
 Error Type 2: Database Connection Failure
 Frequency: 0.05%
 Handling: Supabase query module fails, scenario stops
@@ -6409,6 +6413,8 @@ Step 2: Populate Mapping Data
 
 For each product/variant combination you sell, insert mapping:
 
+💡 Time-Saving Tip: If you have 20+ variants, create mappings in spreadsheet first (columns: your_product_id, your_variant_id, provider_variant_id, base_cost_cents), export as CSV, then bulk import using Supabase's CSV import feature (Table → Insert → Import from CSV). Saves 45-90 minutes vs individual INSERT statements.
+
 ```sql
 -- Example: Geometric T-shirt in Large, Blue mapped to Printful variant 4012
 INSERT INTO variant_mappings (
@@ -6478,6 +6484,8 @@ Step 1: Add Printful API Connection to Make.com
 3. Select "Make a request"
 4. Method: POST
 5. URL: https://api.printful.com/orders
+
+⌨️ Time-Saving Shortcut: Press 'N' in Make.com to add new module (faster than clicking '+'), then type module name to search. Press Tab to autocomplete. Press Cmd/Ctrl+S to save scenario. These shortcuts save 15-30 seconds per module (adds up to 10-15 minutes over full build).
 
 Headers:
   Authorization: Bearer {{printful_api_key}}
@@ -23494,7 +23502,1228 @@ END OF PART 7.5: BUSINESS INTELLIGENCE AND ANALYTICS
 ═══════════════════════════════════════════════════════════════════════════════
 
 ═══════════════════════════════════════════════════════════════════════════════
+
+APPENDIX H: MIGRATION PROCEDURES
+
+This appendix provides step-by-step migration procedures for common scenarios you'll encounter when evolving your automation system.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+H.1: MIGRATING FROM MANUAL TO AUTOMATED OPERATIONS
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🚀 MIGRATION OVERVIEW                                                        │
+│                                                                             │
+│ Timeline: 2-3 weeks for safe transition                                     │
+│ Risk Level: Medium (dual operation reduces risk)                            │
+│ Downtime Required: Zero (parallel operation during migration)               │
+│                                                                             │
+│ Success Criteria:                                                           │
+│   • 100 consecutive automated orders without manual intervention            │
+│   • Zero customer complaints about order processing                         │
+│   • All edge cases documented and handled                                   │
+│   • Team trained on new system                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+PHASE 1: PARALLEL OPERATION (Week 1)
+Goal: Run automation alongside manual process, verify accuracy
+
+Day 1-2: Setup Automation Infrastructure
+□ Create Stripe webhook endpoint
+□ Configure Make.com scenario (receive webhooks only, no order submission)
+□ Setup Supabase database with all tables
+□ Configure monitoring (Better Uptime, Discord alerts)
+□ Test webhook reception with test orders
+
+Day 3-4: Shadow Mode Testing
+□ Process all orders manually as usual
+□ Automation receives webhooks and logs to database (no fulfillment submission)
+□ Daily comparison: Manual orders vs automation logs
+□ Fix any data extraction issues
+□ Verify 100% webhook capture rate
+
+Day 5-7: Side-by-Side Validation
+□ Continue manual processing
+□ Enable automation to submit to Printful (in "draft" mode if available)
+□ Compare manual order entry vs automated submissions
+□ Verify data accuracy: addresses, variants, metadata
+□ Document any discrepancies and fix root causes
+
+Success Metrics for Phase 1:
+  ✓ 50+ orders processed in parallel mode
+  ✓ Webhook capture rate: 100%
+  ✓ Data accuracy match: >99%
+  ✓ Zero critical errors requiring manual cleanup
+
+PHASE 2: SUPERVISED AUTOMATION (Week 2)
+Goal: Let automation handle orders, but monitor closely
+
+Day 8-10: Automation Takes Lead
+□ Stop manual order entry for new orders
+□ Automation submits orders to Printful immediately
+□ Check Discord/dashboard every 2 hours during business hours
+□ Manual queue monitored and processed within 30 minutes
+□ Keep manual process ready as fallback
+
+Day 11-12: Edge Case Discovery
+□ Test edge cases deliberately:
+  - International orders
+  - Special characters in names/addresses
+  - Multiple items per order
+  - Out of stock scenarios
+  - API timeouts (test with Printful support)
+□ Document all edge case handling
+□ Update scenario to handle discovered cases
+
+Day 13-14: Reduce Monitoring Frequency
+□ Check dashboard 3x daily (morning, midday, evening)
+□ Increase confidence in automation
+□ Document any manual interventions required
+□ Calculate actual automation success rate
+
+Success Metrics for Phase 2:
+  ✓ 100+ automated orders processed
+  ✓ Automation success rate: >96%
+  ✓ Manual intervention rate: <4%
+  ✓ Customer satisfaction maintained
+
+PHASE 3: FULL AUTOMATION (Week 3)
+Goal: Trust automation, monitor exceptions only
+
+Day 15-17: Hands-Off Operation
+□ Only check dashboard 1x daily (morning review)
+□ Respond to Discord alerts (should be rare)
+□ Process manual queue as needed
+□ Track time saved vs manual operation
+
+Day 18-21: Decommission Manual Process
+□ Archive manual process documentation (for emergencies)
+□ Remove manual order templates from active use
+□ Update team procedures (if applicable)
+□ Celebrate successful migration!
+
+Success Metrics for Phase 3:
+  ✓ 200+ consecutive automated orders
+  ✓ Zero customer complaints about processing
+  ✓ Time per order reduced from 8-12 min to <1 min
+  ✓ Can take vacation without order processing anxiety
+
+ROLLBACK PLAN (If Things Go Wrong)
+
+Trigger conditions for rollback:
+  • Customer complaints spike (>5% of orders)
+  • Automation success rate drops below 90%
+  • Critical bug affecting order accuracy
+  • Provider API prolonged outage (>4 hours)
+
+Rollback procedure (30-minute execution):
+  1. Disable Make.com scenario (pause all webhook processing)
+  2. Notify customers of temporary processing delay (if needed)
+  3. Resume manual order processing from Stripe dashboard
+  4. Process any queued orders manually
+  5. Debug automation issues offline
+  6. Resume Phase 1 after fixes
+
+Emergency contact list:
+  • Stripe Support: support@stripe.com (webhook issues)
+  • Make.com Support: support@make.com (scenario failures)
+  • Printful Support: support@printful.com (API issues)
+  • Supabase Support: support@supabase.io (database issues)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+H.2: SWITCHING FULFILLMENT PROVIDERS
+
+Scenario: Migrating from Printful to Printify (or adding multi-provider support)
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ⚠️ PROVIDER MIGRATION COMPLEXITY                                            │
+│                                                                             │
+│ Simple approach (replace provider): 6-8 hours, some downtime                │
+│ Robust approach (multi-provider): 12-16 hours, zero downtime               │
+│                                                                             │
+│ Recommendation: Multi-provider approach. Effort justified by reliability.   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+PREPARATION PHASE (Before Migration)
+
+Step 1: Product Catalog Mapping (2-3 hours)
+□ Export current products from Provider A
+□ Create equivalent products in Provider B
+□ Document variant ID mappings in spreadsheet:
+  - Your product ID
+  - Your variant ID
+  - Provider A variant ID (old)
+  - Provider B variant ID (new)
+  - Base cost comparison
+  - Quality notes
+□ Identify any products not available in Provider B
+
+Step 2: Test Order Validation (1 hour)
+□ Create test order in Provider B manually
+□ Verify product quality meets standards
+□ Test shipping speed (order sample to yourself)
+□ Compare costs: Provider A vs Provider B
+□ Decision: Replace or add as backup?
+
+Step 3: Database Schema Update (30 minutes)
+□ Add provider_name column to variant_mappings (if not exists)
+□ Insert Provider B variant mappings:
+
+```sql
+INSERT INTO variant_mappings (
+  your_product_id,
+  your_variant_id,
+  provider_name,
+  provider_variant_id,
+  base_cost_cents
+)
+SELECT 
+  your_product_id,
+  your_variant_id,
+  'printify' as provider_name,
+  provider_b_variant_id,
+  provider_b_cost_cents
+FROM provider_migration_temp;
+```
+
+OPTION A: REPLACE PROVIDER (Simple, Some Downtime)
+
+Duration: 2-3 hours
+Downtime: 15-30 minutes
+Best for: Single provider setup, Provider A consistently problematic
+
+Step 1: Update Variant Mappings (30 minutes)
+□ Update all variant_mappings to use Provider B IDs
+□ Backup old mappings before update:
+
+```sql
+-- Backup
+CREATE TABLE variant_mappings_backup AS 
+SELECT * FROM variant_mappings WHERE provider_name = 'printful';
+
+-- Update
+UPDATE variant_mappings 
+SET provider_variant_id = provider_b_variant_id,
+    provider_name = 'printify'
+WHERE provider_name = 'printful';
+```
+
+Step 2: Update Make.com Scenario (45 minutes)
+□ Clone existing scenario (backup)
+□ Update HTTP module:
+  - New API endpoint (Printify URL)
+  - New authentication (Printify API key)
+  - New request body format (Printify schema)
+□ Test with test webhook
+□ Verify order submission to Printify
+
+Step 3: Cutover (15 minutes)
+□ Disable old scenario
+□ Enable new scenario
+□ Process test order end-to-end
+□ Monitor first 5 real orders closely
+
+Step 4: Post-Migration Monitoring (24 hours)
+□ Check every order for first 24 hours
+□ Verify Printify order status webhooks
+□ Compare success rate to Provider A baseline
+□ Address any issues immediately
+
+OPTION B: ADD MULTI-PROVIDER FAILOVER (Robust, Zero Downtime)
+
+Duration: 6-8 hours
+Downtime: Zero
+Best for: Production systems, reliability-critical operations
+
+Step 1: Add Provider B Configuration (2 hours)
+□ Keep Provider A as primary
+□ Add Provider B as failover option
+□ Update variant_mappings to include both providers
+□ No changes to existing Provider A setup
+
+Step 2: Implement Failover Logic in Make.com (3 hours)
+□ After variant lookup, add provider priority logic:
+
+```
+1. Try Provider A (Printful)
+2. If Provider A fails (timeout/error), try Provider B (Printify)
+3. If Provider B fails, route to manual queue
+```
+
+□ Add error handler to Provider A HTTP module
+□ On error, route to Provider B HTTP module
+□ Update database logging to track which provider used
+
+Step 3: Testing Failover (2 hours)
+□ Test normal flow: Provider A succeeds
+□ Test failover: Temporarily break Provider A credentials
+□ Verify Provider B receives order
+□ Test double failure: Both providers fail → manual queue
+□ Verify logging records provider used
+
+Step 4: Gradual Rollout (1 week)
+□ Week 1: Monitor failover frequency (should be <2%)
+□ Identify if Provider B handling edge cases correctly
+□ Adjust failover logic based on real-world behavior
+□ Document any Provider B quirks discovered
+
+Provider Priority Strategies:
+
+Strategy 1: Quality Priority
+  Primary: Printful (best quality)
+  Backup: Printify (acceptable quality)
+  Use case: Premium brands, quality-sensitive customers
+
+Strategy 2: Cost Priority
+  Primary: Printify (lowest cost)
+  Backup: Printful (reliability)
+  Use case: High volume, cost-sensitive operations
+
+Strategy 3: Geographic Priority
+  Primary: Printful (US/EU orders)
+  Backup: Gooten (Asia/Pacific orders)
+  Use case: International operations, shipping speed optimization
+
+Strategy 4: Load Balancing
+  Round-robin between providers based on time/load
+  Use case: Very high volume, no single provider can handle scale
+
+═══════════════════════════════════════════════════════════════════════════════
+
+H.3: DATABASE MIGRATION AND UPGRADES
+
+Scenario: Migrating Supabase free tier → paid tier, or Supabase → self-hosted PostgreSQL
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🗄️ DATABASE MIGRATION SAFETY                                                │
+│                                                                             │
+│ NEVER migrate database without:                                            │
+│   ✓ Complete backup verified restorable                                    │
+│   ✓ Tested migration on copy of production data                            │
+│   ✓ Rollback plan documented and rehearsed                                 │
+│   ✓ Maintenance window scheduled (low traffic time)                        │
+│                                                                             │
+│ Data loss from bad migration = business catastrophe                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+SUPABASE FREE → PAID TIER (Simplest Migration)
+
+Duration: 5 minutes
+Downtime: Zero
+Complexity: Trivial
+
+Step 1: Upgrade in Supabase Dashboard
+□ Navigate to Settings → Billing
+□ Select "Pro" plan ($25/month)
+□ Enter payment information
+□ Click "Upgrade"
+□ Confirm upgrade
+
+Step 2: Verify No Disruption
+□ Connection string remains unchanged
+□ Existing API keys still work
+□ No code changes required
+□ Monitor for 24 hours to confirm stability
+
+Benefits of paid tier:
+  • 8GB database size (vs 500MB free)
+  • 50GB bandwidth (vs 2GB free)
+  • 7 day PITR backups (vs none free)
+  • Email support (vs community only)
+  • No pausing of inactive databases
+
+SUPABASE → SELF-HOSTED POSTGRESQL (Advanced)
+
+Duration: 4-6 hours
+Downtime: 15-30 minutes (with proper planning)
+Complexity: High
+Recommended only if: Cost optimization needed at very high scale (5000+ orders/month)
+
+PREPARATION (Do this 1 week before migration)
+
+Step 1: Provision PostgreSQL Instance (1 hour)
+□ Choose hosting: AWS RDS, DigitalOcean Managed DB, or self-hosted
+□ Provision PostgreSQL 14+ instance
+□ Configure security groups (allow Make.com IP ranges)
+□ Note connection details:
+  - Host
+  - Port
+  - Database name
+  - Username
+  - Password
+
+Step 2: Schema Export from Supabase (15 minutes)
+□ Connect to Supabase via psql:
+
+```bash
+psql "postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres"
+```
+
+□ Export schema only:
+
+```bash
+pg_dump "postgresql://..." --schema-only --no-owner --no-privileges > schema.sql
+```
+
+□ Review schema.sql for any Supabase-specific features:
+  - RLS policies (need manual recreation)
+  - Supabase auth schema (if used)
+  - Extensions (ensure target supports)
+
+Step 3: Test Migration on Copy (2 hours)
+□ Create test database in new PostgreSQL
+□ Import schema: `psql [NEW_DB] < schema.sql`
+□ Export subset of data from Supabase:
+
+```bash
+pg_dump "postgresql://..." --data-only --table=orders --table=webhooks > data_sample.sql
+```
+
+□ Import to test database: `psql [NEW_DB] < data_sample.sql`
+□ Verify data integrity: Row counts match, key data readable
+□ Test Make.com connection to new database
+□ Verify queries work as expected
+
+MIGRATION DAY (Schedule during low-traffic period, e.g., 2 AM)
+
+Step 1: Pause Order Processing (5 minutes)
+□ Pause Make.com scenarios (stop new order processing)
+□ Post notice on storefront: "System maintenance 2-3 AM, orders accepted but processing delayed"
+□ Wait 5 minutes for in-flight webhooks to complete
+
+Step 2: Final Data Export (5-15 minutes depending on size)
+□ Export all tables:
+
+```bash
+pg_dump "postgresql://[SUPABASE]" \
+  --data-only \
+  --no-owner \
+  --no-privileges \
+  --table=orders \
+  --table=webhooks \
+  --table=variant_mappings \
+  --table=analytics \
+  > full_data_export.sql
+```
+
+□ Verify export file size reasonable
+□ Store backup securely (S3, encrypted local copy)
+
+Step 3: Import to New Database (5-15 minutes)
+□ Import schema (if not already done):
+
+```bash
+psql "postgresql://[NEW_DB]" < schema.sql
+```
+
+□ Import data:
+
+```bash
+psql "postgresql://[NEW_DB]" < full_data_export.sql
+```
+
+□ Verify import:
+
+```sql
+SELECT COUNT(*) FROM orders;
+SELECT COUNT(*) FROM webhooks;
+SELECT MAX(created_at) FROM orders; -- Should match Supabase
+```
+
+Step 4: Update Make.com Connection (5 minutes)
+□ In Make.com, go to Connections
+□ Add new PostgreSQL connection:
+  - Host: [NEW_DB_HOST]
+  - Port: 5432
+  - Database: [NEW_DB_NAME]
+  - User: [NEW_DB_USER]
+  - Password: [NEW_DB_PASS]
+□ Test connection
+□ Update all Supabase modules in scenario to use new connection
+□ Do NOT delete old Supabase connection yet (rollback safety)
+
+Step 5: Test End-to-End (5 minutes)
+□ Create test Stripe order
+□ Verify webhook received
+□ Verify database insert successful
+□ Verify order submitted to fulfillment provider
+□ Check all data fields populated correctly
+
+Step 6: Resume Production (1 minute)
+□ Enable Make.com scenarios
+□ Remove maintenance notice
+□ Monitor first 10 orders very closely
+□ Keep Supabase connection live for 24 hours (rollback option)
+
+POST-MIGRATION MONITORING (24 hours)
+
+Hour 1-4: Intensive Monitoring
+□ Check every order processed
+□ Verify database writes successful
+□ Monitor query performance (should be same or better)
+□ Check error logs in Make.com
+
+Hour 4-24: Normal Monitoring
+□ Check dashboard 3x (morning, midday, evening)
+□ Verify no customer complaints
+□ Monitor database CPU/memory usage
+□ Compare performance to Supabase baseline
+
+After 24 Hours: Finalization
+□ If all stable, delete Supabase connection from Make.com
+□ Downgrade Supabase to free tier (or cancel)
+□ Archive Supabase data export for compliance (keep 90 days minimum)
+□ Update documentation with new database details
+
+ROLLBACK PROCEDURE (If Issues Arise)
+
+Execute within 30 minutes if problems detected:
+
+1. Pause Make.com scenarios immediately
+2. Restore Supabase connection in Make.com
+3. Verify Supabase data complete (should be, no new writes happened)
+4. Re-enable scenarios using Supabase
+5. Process any queued orders manually if needed
+6. Debug new database issues offline
+7. Retry migration after fixes
+
+═══════════════════════════════════════════════════════════════════════════════
+
+H.4: ZERO-DOWNTIME SYSTEM UPDATES
+
+Scenario: Updating Make.com scenario logic without disrupting order processing
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🔄 UPDATE PHILOSOPHY                                                         │
+│                                                                             │
+│ Bad: Edit production scenario directly → orders fail during testing        │
+│ Good: Clone scenario, test thoroughly, swap in new version                 │
+│                                                                             │
+│ Downtime tolerance: 0 seconds                                              │
+│ Failed orders tolerance: 0 orders                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+UPDATE PROCEDURE (Safe Multi-Version Approach)
+
+Step 1: Clone Production Scenario (5 minutes)
+□ In Make.com, right-click production scenario
+□ Select "Clone"
+□ Rename: "[Scenario Name] v2 - Testing"
+□ Disable the cloned scenario (don't receive webhooks yet)
+□ Make your changes to the CLONED scenario only
+
+Step 2: Parallel Testing with Real Data (30-60 minutes)
+□ Don't rely on synthetic test data - use real production webhooks
+□ Option A: Dual-write approach
+  - Temporarily add webhook router: send to both v1 (production) and v2 (testing)
+  - v1 processes normally
+  - v2 logs results but doesn't submit to fulfillment (testing only)
+  - Compare results: v1 vs v2
+  
+□ Option B: Replay approach (safer)
+  - Export recent webhooks from database
+  - Manually trigger v2 scenario with replayed data
+  - Verify outputs match v1 behavior
+  - No impact on customers
+
+Step 3: Validation Checklist
+□ Test 20+ diverse orders through v2:
+  - Standard domestic order
+  - International order
+  - Multi-item order
+  - Order with special characters in name
+  - Order with APO/FPO address
+  - Order during provider API timeout (simulate)
+  - Order with invalid metadata (should route to manual queue)
+□ Verify all database writes correct
+□ Verify all email sends correct
+□ Verify all alerts trigger correctly
+□ Check execution time: should be similar to v1
+
+Step 4: Staged Rollout (Low-Risk Cutover)
+
+Option A: Instant Cutover (95% of updates)
+Duration: 2 minutes, use for non-critical updates
+
+□ Pause v1 (production) scenario
+□ Enable v2 (tested) scenario
+□ Process test order end-to-end
+□ If successful, monitor first 5-10 orders closely
+□ If issues, pause v2, re-enable v1 (30-second rollback)
+
+Option B: Gradual Percentage Rollout (5% of updates)
+Duration: 1-3 days, use for major changes
+
+□ Add webhook router: 90% → v1, 10% → v2
+□ Monitor v2 performance for 4-8 hours
+□ If successful, adjust: 75% → v1, 25% → v2
+□ Continue increasing v2 traffic: 50%, 75%, 90%
+□ Final cutover: 100% → v2
+□ Decommission v1 after 24 hours of stable v2
+
+Step 5: Documentation Update
+□ Update internal documentation with changes
+□ Note version number and date
+□ Document any behavioral changes
+□ Update troubleshooting guides if logic changed
+
+COMMON UPDATE SCENARIOS
+
+Update 1: Add New Product Variant
+Complexity: Low, downtime: 0 minutes
+
+□ Add variant mapping to database (doesn't affect existing orders)
+□ Test new variant with test order
+□ No scenario changes needed
+□ Zero risk
+
+Update 2: Change Error Handling Logic  
+Complexity: Medium, downtime: 0 minutes
+
+□ Clone scenario, update error handler
+□ Test with simulated errors
+□ Use Instant Cutover approach
+□ Monitor error handling for 24 hours
+
+Update 3: Add Multi-Provider Failover
+Complexity: High, downtime: 0 minutes
+
+□ Major logic change, use Gradual Rollout
+□ Start with 10% traffic for 48 hours
+□ Verify failover triggers correctly
+□ Increase to 100% over 5-7 days
+
+Update 4: Upgrade Make.com Plan (Tier Change)
+Complexity: Low, downtime: 0 minutes
+
+□ Upgrade in billing settings
+□ No scenario changes needed
+□ Immediately get higher operation limits
+□ Monitor to confirm no throttling
+
+═══════════════════════════════════════════════════════════════════════════════
+
+H.5: MIGRATION CHECKLIST LIBRARY
+
+Quick reference checklists for common migrations.
+
+CHECKLIST: Manual → Automated (Full)
+□ Stripe webhook endpoint configured
+□ Make.com scenario receiving webhooks
+□ Supabase database created with all tables
+□ Variant mappings populated for all products
+□ Discord notifications configured
+□ Better Uptime monitoring configured
+□ Test order processed successfully end-to-end
+□ Parallel operation completed (1 week minimum)
+□ 100 consecutive successful automated orders
+□ Manual process documented as emergency backup
+□ Team trained on new system
+□ Celebration scheduled!
+
+CHECKLIST: Add New Fulfillment Provider
+□ Provider account created and verified
+□ API credentials obtained and secured
+□ Products mapped in new provider
+□ Test order placed and quality verified
+□ Variant mappings added to database for new provider
+□ Make.com scenario updated with provider logic
+□ Failover logic tested with simulated failures
+□ Cost comparison documented (new vs old provider)
+□ 50 orders processed through new provider
+□ Customer satisfaction unchanged
+
+CHECKLIST: Database Migration
+□ New database provisioned and accessible
+□ Schema exported from old database
+□ Test migration completed on copy of data
+□ Full backup of production data created
+□ Maintenance window scheduled
+□ Make.com connections updated
+□ End-to-end test successful on new database
+□ Rollback plan documented and tested
+□ 24-hour monitoring period completed
+□ Old database decommissioned (after 7-day safety period)
+
+CHECKLIST: Make.com Scenario Update
+□ Production scenario cloned
+□ Changes made to clone only
+□ 20+ test cases executed successfully
+□ Execution time comparable to production
+□ Gradual rollout plan prepared (if major change)
+□ Rollback plan documented (30-second execution)
+□ Update deployed during low-traffic period
+□ First 10 orders monitored intensively
+□ Documentation updated with changes
+□ Old scenario version archived
+
+═══════════════════════════════════════════════════════════════════════════════
+END OF APPENDIX H: MIGRATION PROCEDURES
+═══════════════════════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════════════════════════
+
+APPENDIX I: SECURITY AND COMPLIANCE CHECKLIST
+
+This appendix provides comprehensive security best practices, compliance requirements, and audit procedures for production e-commerce automation systems.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+I.1: API KEY AND CREDENTIAL SECURITY
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🔐 SECURITY REALITY                                                          │
+│                                                                             │
+│ Your system has 8-12 API keys/credentials controlling:                     │
+│   • Customer payment data (Stripe secret key)                              │
+│   • Order fulfillment (Printful/Printify API keys)                         │
+│   • Customer email addresses (Resend API key)                              │
+│   • Database access (Supabase credentials)                                 │
+│                                                                             │
+│ One compromised key = business catastrophe                                 │
+│   • Attackers can charge cards, steal customer data, modify orders         │
+│   • Average breach detection time: 207 days (IBM 2023 report)              │
+│   • Average breach cost for small business: $120,000                       │
+│                                                                             │
+│ Security isn't optional. It's survival.                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+CREDENTIAL INVENTORY (Complete list of secrets)
+
+Critical Secrets (Compromise = immediate business threat):
+□ Stripe Secret Key (sk_live_...)
+  - Access: Full payment processing, customer data, refunds
+  - Storage: Make.com environment variables only
+  - Rotation: Annually or immediately if exposed
+  
+□ Stripe Webhook Signing Secret (whsec_...)
+  - Access: Validates webhook authenticity
+  - Storage: Make.com webhook configuration
+  - Rotation: After any suspected compromise
+
+□ Supabase Service Role Key (eyJ...)
+  - Access: Full database read/write, bypass RLS
+  - Storage: Make.com environment variables only (never client-side)
+  - Rotation: Quarterly or immediately if exposed
+
+High-Priority Secrets (Compromise = service disruption):
+□ Printful API Key
+□ Printify API Token
+□ Resend API Key
+□ Better Uptime API Key
+□ Discord Webhook URL
+
+Standard Secrets (Compromise = limited impact):
+□ Make.com scenario webhook URLs
+□ Supabase anon key (restricted by RLS)
+
+SECURE STORAGE REQUIREMENTS
+
+✅ CORRECT Storage Locations:
+  1. Make.com environment variables (scenario-specific variables)
+  2. Password manager (1Password, Bitwarden, LastPass)
+  3. Encrypted secrets manager (AWS Secrets Manager, Vault if scaling to team)
+
+❌ NEVER Store Credentials In:
+  • Git repositories (even private repos)
+  • Shared documents (Google Docs, Notion)
+  • Slack/Discord messages
+  • Email
+  • Browser bookmarks
+  • Plain text files on computer
+  • Screenshots
+  • Client-side code (frontend JavaScript)
+
+Make.com Secure Variable Configuration:
+
+1. In Make.com scenario, click "Scenario settings" (gear icon)
+2. Go to "Variables" tab
+3. Add each credential as variable:
+   - Name: stripe_secret_key
+   - Value: [paste secret key]
+   - ✓ Check "Do not show in scenario history" (critical for secrets)
+4. Reference in modules: `{{stripe_secret_key}}`
+
+CREDENTIAL ROTATION SCHEDULE
+
+Quarterly Rotation (Every 90 days):
+□ Supabase service role key
+□ Better Uptime API key
+□ Non-critical service API keys
+
+Annual Rotation (Every 365 days):
+□ Stripe secret key (coordinate with Stripe support)
+□ Printful/Printify API keys
+□ Password manager master password
+
+Immediate Rotation (When triggered):
+□ Any key accidentally exposed (Slack, email, screenshot, Git)
+□ Team member leaves with access
+□ Suspicious account activity detected
+□ Provider security breach notification received
+
+Rotation Procedure:
+1. Generate new key in provider dashboard
+2. Update Make.com variable with new key
+3. Test scenario with test order (verify new key works)
+4. Invalidate old key in provider dashboard
+5. Document rotation date in password manager notes
+
+ACCESS CONTROL MATRIX
+
+Service: Stripe
+- Who needs access: Business owner only
+- Access level: Administrator
+- 2FA required: Yes (mandatory)
+- Shared credentials: Never
+- Session timeout: 2 hours
+
+Service: Make.com
+- Who needs access: Business owner + developer (if hired)
+- Access level: Editor for scenarios, Viewer for others
+- 2FA required: Yes
+- Shared credentials: Never (use team seats)
+- Session timeout: 24 hours
+
+Service: Supabase
+- Who needs access: Business owner + developer (if hired)
+- Access level: Owner/Admin for production, separate dev project for testing
+- 2FA required: Yes
+- Shared credentials: Never
+- Session timeout: 7 days
+
+═══════════════════════════════════════════════════════════════════════════════
+
+I.2: WEBHOOK SECURITY
+
+Webhooks are your system's front door. Secure them properly.
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ⚠️ WEBHOOK VULNERABILITY                                                    │
+│                                                                             │
+│ Unsecured webhook = attacker can:                                          │
+│   • Submit fake orders to exhaust inventory                                │
+│   • Trigger thousands of emails (spam, cost)                               │
+│   • Pollute database with garbage data                                     │
+│   • Cause fulfillment costs for non-existent orders                        │
+│                                                                             │
+│ Stripe signature validation is NON-NEGOTIABLE.                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+WEBHOOK SECURITY CHECKLIST
+
+Stripe Webhook Security:
+□ Signature validation implemented (Stripe cryptographic signature module)
+□ Webhook endpoint is HTTPS only (HTTP rejected)
+□ Webhook signing secret stored securely (Make.com env var)
+□ Invalid signature requests logged (for security monitoring)
+□ Rate limiting configured (reject >100 requests/minute from single IP)
+□ Webhook URL not guessable (includes random token if possible)
+
+Example Secure URL:
+❌ Bad: https://hook.make.com/abc123
+✅ Good: https://hook.make.com/abc123?token=xyz789random
+
+Make.com Webhook Configuration:
+□ IP restrictions enabled (if Make.com supports, allow only Stripe IPs)
+□ Request size limit: 1MB maximum (reject larger)
+□ Timeout: 30 seconds (prevent hanging connections)
+□ Retry handling: Accept Stripe retries (don't block on first failure)
+
+Monitoring and Alerting:
+□ Failed signature validation → Discord alert immediately
+□ Unusual webhook volume (>5x normal) → Alert
+□ Repeated failed attempts from same IP → Block + alert
+□ Valid webhook but unusual metadata → Manual review queue
+
+STRIPE IP WHITELIST (Optional, High Security)
+
+Stripe webhook IPs (as of 2024, verify current list):
+- 3.18.12.63
+- 3.130.192.231
+- 13.235.14.237
+- 13.235.122.149
+- (full list: https://stripe.com/docs/ips)
+
+If using firewall/API gateway, whitelist only these IPs for webhook endpoint.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+I.3: DATA ENCRYPTION AND PRIVACY
+
+CUSTOMER DATA INVENTORY
+
+PII (Personally Identifiable Information) you store:
+□ Customer email address
+□ Customer full name
+□ Shipping address (street, city, state, postal code)
+□ Payment information (stored by Stripe, not you - do NOT store card numbers)
+□ Order history
+□ IP address (if logged)
+
+Data Encryption Status:
+
+Encryption in Transit (All connections must use TLS/SSL):
+✅ Stripe → Make.com: HTTPS enforced
+✅ Make.com → Supabase: SSL enforced
+✅ Make.com → Printful/Printify: HTTPS enforced
+✅ Make.com → Email provider: HTTPS enforced
+
+Encryption at Rest (Data stored encrypted):
+✅ Supabase: AES-256 encryption automatically applied
+✅ Stripe: PCI DSS Level 1 compliant (card data encrypted)
+✅ Make.com logs: Encrypted storage
+
+❌ Unencrypted locations (risks):
+- Discord webhook messages (use for order IDs only, not PII)
+- Make.com execution history (visible in plain text for 30 days)
+- Email confirmations (email is not encrypted in transit beyond your control)
+
+DATA MINIMIZATION PRINCIPLE
+
+Store only what you need:
+✅ Store: Order details, customer email, shipping address, order status
+❌ Don't Store: Credit card numbers (Stripe handles this)
+❌ Don't Store: Social security numbers (not needed)
+❌ Don't Store: Passwords (use OAuth if building customer portal)
+
+DATA RETENTION POLICY
+
+Recommended retention:
+- Active orders: Indefinite (operational need)
+- Completed orders: 7 years (tax compliance)
+- Failed webhooks: 90 days (debugging)
+- Analytics data: 2 years (business intelligence)
+- Logs: 90 days (troubleshooting)
+
+Automated cleanup (Supabase scheduled function):
+
+```sql
+-- Delete old webhook logs (>90 days)
+DELETE FROM webhooks WHERE created_at < NOW() - INTERVAL '90 days';
+
+-- Archive completed orders (>2 years) to cold storage
+-- (Implement if order volume very high)
+```
+
+CUSTOMER DATA RIGHTS (GDPR/CCPA Compliance)
+
+If selling to EU or California customers, you must support:
+
+Right to Access: Customer requests their data
+□ Query orders table for customer_email
+□ Export as JSON or PDF
+□ Respond within 30 days
+
+Right to Deletion: Customer requests data deletion
+□ Delete from orders table (mark as deleted, preserve order_id for accounting)
+□ Notify fulfillment providers to delete
+□ Confirm deletion within 30 days
+
+Right to Portability: Customer requests data export
+□ Export order history as CSV
+□ Include: dates, products, amounts, shipping addresses
+
+Implementation Example (Supabase RPC function):
+
+```sql
+CREATE OR REPLACE FUNCTION export_customer_data(customer_email_input TEXT)
+RETURNS JSON AS $$
+  SELECT json_agg(row_to_json(orders))
+  FROM orders
+  WHERE customer_email = customer_email_input;
+$$ LANGUAGE SQL SECURITY DEFINER;
+```
+
+═══════════════════════════════════════════════════════════════════════════════
+
+I.4: COMPLIANCE REQUIREMENTS
+
+PCI DSS (Payment Card Industry Data Security Standard)
+
+Your responsibility level: SAQ A (simplest)
+Reason: You don't touch credit cards (Stripe handles all payment data)
+
+PCI DSS Compliance Checklist (SAQ A):
+□ Use Stripe.js or Stripe Checkout (never send card data through your server)
+□ Serve checkout page over HTTPS
+□ Don't log card numbers (even accidentally)
+□ Keep systems patched and updated
+□ Use strong passwords and 2FA
+□ Submit annual SAQ A questionnaire (via Stripe dashboard)
+
+✅ You're compliant if: Card data never touches your system
+❌ You're non-compliant if: You store/transmit card numbers directly
+
+GDPR (General Data Protection Regulation)
+
+Applies if: You have EU customers
+
+GDPR Compliance Checklist:
+□ Privacy policy published on website
+□ Cookie consent banner implemented (if using tracking cookies)
+□ Customer data encrypted in transit and at rest
+□ Data breach notification plan (inform customers within 72 hours)
+□ Data processing agreement with all providers (Stripe, Supabase, etc.)
+□ Customer data access/deletion requests supported
+□ Lawful basis for processing documented (contract performance)
+
+CCPA (California Consumer Privacy Act)
+
+Applies if: You have California customers and revenue >$25M or 50K+ CA customers
+
+CCPA Compliance Checklist (if applicable):
+□ "Do Not Sell My Info" link on website
+□ Privacy policy includes CCPA disclosures
+□ Customer data access/deletion requests supported
+□ Third-party data sharing disclosed
+
+CAN-SPAM (Email Compliance)
+
+Applies to: All commercial emails (order confirmations are transactional, exempt from most rules)
+
+CAN-SPAM Checklist:
+□ "From" line accurate (your business name or domain)
+□ Subject line not deceptive
+□ Physical address in footer (your business address)
+□ Unsubscribe link in marketing emails (not required for transactional)
+□ Honor unsubscribe requests within 10 days
+
+Transactional vs Marketing Email:
+
+Transactional (CAN-SPAM exempt):
+✅ Order confirmation
+✅ Shipping notification
+✅ Delivery confirmation
+✅ Password reset
+
+Marketing (Must comply with CAN-SPAM):
+❌ Promotional emails
+❌ New product announcements
+❌ Discount offers
+❌ Newsletter
+
+═══════════════════════════════════════════════════════════════════════════════
+
+I.5: SECURITY AUDIT PROCEDURES
+
+Perform quarterly security audits (every 90 days) using this checklist.
+
+QUARTERLY SECURITY AUDIT CHECKLIST
+
+Date of audit: _______________
+Auditor: _______________
+
+API Key Security:
+□ All API keys stored in secure locations only (password manager + Make.com env vars)
+□ No API keys in Git repositories (use `git log -p | grep -i "sk_live"` to check)
+□ No API keys in screenshots or documents
+□ API keys rotated per schedule (quarterly/annual)
+□ Unused API keys revoked
+
+Access Control:
+□ All accounts use strong passwords (12+ characters, unique)
+□ 2FA enabled on all critical accounts (Stripe, Make.com, Supabase, domain registrar)
+□ No shared accounts (each person has individual login)
+□ Former team members' access revoked
+□ Session timeout configured appropriately
+
+Webhook Security:
+□ Stripe webhook signature validation active
+□ Webhook endpoint HTTPS only
+□ Invalid webhook attempts logged
+□ No suspicious webhook activity in past 90 days
+
+Data Protection:
+□ All connections use TLS/SSL encryption
+□ Database backups enabled (Supabase automatic backups verified)
+□ No PII stored in Discord/logs unnecessarily
+□ Data retention policy followed (old data deleted per schedule)
+
+Monitoring and Alerting:
+□ Better Uptime monitoring active for all critical endpoints
+□ Discord alerts functional (test sent and received)
+□ No unacknowledged security alerts
+□ Make.com execution history reviewed for anomalies
+
+Compliance:
+□ Privacy policy up to date
+□ PCI DSS SAQ A submitted (if annual renewal due)
+□ GDPR data processing agreements current
+□ Customer data request procedure documented and tested
+
+Incident Response:
+□ Breach notification procedure documented
+□ Key contact list updated (lawyer, insurance, Stripe support)
+□ Backup restoration tested (quarterly test restore)
+□ Rollback procedures documented and tested
+
+Software Updates:
+□ Make.com modules using latest versions
+□ Supabase version current (check for security updates)
+□ All provider integrations using latest API versions
+
+ANNUAL PENETRATION TESTING (Optional, Recommended at Scale)
+
+When to consider: Processing >$500K annually or storing >10K customer records
+
+DIY Security Tests:
+□ Attempt to submit fake webhook (should reject without valid signature)
+□ Attempt SQL injection in forms (should be prevented by parameterized queries)
+□ Check for exposed API keys in public Git history
+□ Verify HTTPS enforced (try HTTP connection, should redirect or reject)
+□ Test data deletion procedure (submit GDPR deletion request to yourself)
+
+Professional Testing:
+□ Hire penetration testing firm (~$2,000-$5,000)
+□ Provide scope: Webhook endpoints, database access, API integrations
+□ Review report and remediate findings
+□ Re-test after fixes
+
+═══════════════════════════════════════════════════════════════════════════════
+
+I.6: INCIDENT RESPONSE PLAN
+
+Security Incident Definition:
+- Unauthorized access to system
+- API key exposure/compromise
+- Data breach (customer data accessed by unauthorized party)
+- Malicious webhook activity
+- Ransomware/malware infection
+- DDoS attack affecting service availability
+
+INCIDENT RESPONSE PROCEDURE (Execute within 1 hour of detection)
+
+Phase 1: CONTAINMENT (0-15 minutes)
+□ Identify affected systems
+□ Immediately rotate compromised API keys
+□ Disable affected Make.com scenarios (if attack in progress)
+□ Block attacker IP addresses (if identifiable)
+□ Preserve logs (copy Make.com execution history, Supabase logs)
+
+Phase 2: ASSESSMENT (15-45 minutes)
+□ Determine scope: How many customers affected?
+□ Identify data accessed: What PII was exposed?
+□ Timeline: When did breach occur, how long until detected?
+□ Root cause: How did attacker gain access?
+
+Phase 3: NOTIFICATION (45-60 minutes)
+□ If customer data compromised:
+  - Notify affected customers within 72 hours (GDPR requirement)
+  - Email template: Explain what happened, what data exposed, steps taken
+□ If payment data compromised (should be impossible if using Stripe correctly):
+  - Notify Stripe immediately
+  - Notify payment card brands
+  - Hire PCI forensic investigator
+
+□ Regulatory notification (if required):
+  - GDPR: Notify supervisory authority within 72 hours
+  - CCPA: Notify California Attorney General if >500 CA residents affected
+
+Phase 4: REMEDIATION (Next 24-48 hours)
+□ Fix vulnerability that caused breach
+□ Implement additional security controls
+□ Reset all API keys (even if not directly compromised)
+□ Force password resets for all users
+□ Review and update security procedures
+
+Phase 5: POST-INCIDENT REVIEW (Within 1 week)
+□ Document incident timeline
+□ Identify lessons learned
+□ Update incident response plan
+□ Implement preventive measures
+□ Consider cyber insurance (if not already covered)
+
+EMERGENCY CONTACT LIST
+
+Keep this information accessible 24/7:
+
+Provider Support (Urgent Issues):
+- Stripe Support: support@stripe.com, phone: 1-888-926-2289
+- Make.com Support: support@make.com (emergency: use live chat)
+- Supabase Support: support@supabase.io (priority support if Pro plan)
+
+Legal/Compliance:
+- Your attorney: [Name, Phone, Email]
+- Cyber insurance provider: [Company, Policy Number, Phone]
+- Data protection officer (if appointed): [Name, Email]
+
+Internal:
+- Business owner: [Name, Phone, Email]
+- Technical lead: [Name, Phone, Email]
+- On-call rotation: [Schedule, Contact Method]
+
+Regulatory:
+- GDPR Supervisory Authority: [Your jurisdiction's authority]
+- FTC (USA): reportfraud.ftc.gov
+- State Attorney General: [If applicable]
+
+BREACH COST ESTIMATION (Prepare for insurance/budgeting)
+
+Small breach (100-1,000 customers):
+- Notification costs: $500-$2,000 (email service, legal review)
+- Remediation: $1,000-$5,000 (developer time, security audit)
+- Credit monitoring (if offered): $10-$20 per customer
+- Reputation damage: Incalculable but significant
+- Total: $3,000-$25,000
+
+Large breach (>1,000 customers):
+- Notification costs: $5,000-$20,000
+- Forensic investigation: $10,000-$50,000
+- Legal fees: $20,000-$100,000+
+- Regulatory fines: €20M or 4% revenue (GDPR maximum)
+- Class action lawsuit: $$$$ (highly variable)
+- Total: $50,000-$1,000,000+
+
+Prevention is infinitely cheaper than remediation.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+I.7: SECURITY QUICK REFERENCE CARD
+
+Daily Security Habits:
+✓ Check Better Uptime dashboard (30 seconds)
+✓ Review Make.com execution errors (2 minutes)
+✓ Verify no unusual order patterns (1 minute)
+
+Weekly Security Habits:
+✓ Review Discord alerts for anomalies (5 minutes)
+✓ Check Stripe dashboard for chargebacks/fraud (5 minutes)
+✓ Verify all services accessible and healthy (3 minutes)
+
+Monthly Security Habits:
+✓ Review access logs (Supabase, Make.com) (15 minutes)
+✓ Update passwords for 1-2 accounts (rotation schedule) (10 minutes)
+✓ Review and delete old logs per retention policy (10 minutes)
+
+Quarterly Security Habits:
+✓ Complete full security audit (60 minutes)
+✓ Rotate API keys per schedule (30 minutes)
+✓ Test backup restoration (30 minutes)
+✓ Review and update security documentation (20 minutes)
+
+Annual Security Habits:
+✓ Submit PCI DSS SAQ A questionnaire (60 minutes)
+✓ Review and update privacy policy (30 minutes)
+✓ Rotate all API keys (120 minutes)
+✓ Consider professional security audit (if high volume)
+
+RED FLAGS (Investigate immediately):
+🚩 Spike in webhook failures (>5% failure rate)
+🚩 Login attempts from unusual locations
+🚩 API keys showing up in search engines (set Google Alert for your domain + "sk_live")
+🚩 Customer complaints about unauthorized charges
+🚩 Sudden increase in chargebacks
+🚩 Unusual database query patterns
+🚩 Emails bouncing (could indicate data theft)
+
+═══════════════════════════════════════════════════════════════════════════════
+END OF APPENDIX I: SECURITY AND COMPLIANCE CHECKLIST
+═══════════════════════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════════════════════════
 END OF COMPREHENSIVE SPLANTS AUTOMATION GUIDE
-COMPLETE COVERAGE: Parts 0-8, Appendices A-G
-VERSION 4.0.0 - Complete Edition with Enhancements
+COMPLETE COVERAGE: Parts 0-8, Appendices A-I
+VERSION 5.0.0 - Production-Ready Edition with Security & Migration Procedures
 ═══════════════════════════════════════════════════════════════════════════════
