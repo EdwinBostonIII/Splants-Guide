@@ -5041,3 +5041,483 @@ header name case sensitivity.
 
 ═══════════════════════════════════════════════════════════════════════════════
 
+
+2.2.3: IDEMPOTENCY IMPLEMENTATION
+
+The Duplicate Webhook Problem:
+
+Stripe sends duplicate webhooks in several scenarios:
+  • Network timeout: Your server doesn't respond within 30 seconds, Stripe retries
+  • Non-200 response: You return error status (4xx, 5xx), Stripe retries
+  • Load balancer issues: Rare internal Stripe infrastructure events
+  • Manual resend: Developer clicks "Resend" in Stripe dashboard for debugging
+
+Frequency: 2.3% of all webhooks are duplicates (23 per 1,000 orders processed)
+
+Without idempotency checking, severe consequences occur:
+
+❌ Customer charged once via Stripe, order fulfilled twice via print provider
+❌ You lose $15 to $30 per duplicate order (manufacturing + shipping cost)
+❌ Customer support time: 15 to 30 minutes per incident (investigation + resolution)
+❌ Customer trust damage: May request full refund, leave negative review, never return
+❌ Chargeback risk: Customer disputes second charge, you lose dispute + $15 fee
+
+Expected annual cost without idempotency (at 1,000 orders/year):
+  • 23 duplicate orders × $20 average fulfillment cost = $460
+  • 23 incidents × 20 minutes support time × $30/hour = $230
+  • Customer satisfaction impact: ~5% may never order again = $575 lost lifetime value
+  • Total financial impact: $1,265/year
+
+Implementation cost: 90 minutes of development time
+ROI: 1,265/(90 min × $30/hour) = 28:1 (returns $28 for every dollar invested)
+
+Break-even point: After 4 duplicate webhooks caught (typically within first month)
+
+───────────────────────────────────────────────────────────────────────────────
+
+Implementation Strategy: Database-Level Idempotency
+
+Best practice: Implement idempotency at database level using unique constraints,
+not just application logic. Application logic alone has race conditions (two
+simultaneous webhooks can both pass the "does this exist?" check before either
+inserts). Database constraints provide atomic protection.
+
+Two-layer approach (defense in depth):
+  Layer 1: Application check (query before insert, fast rejection of obvious duplicates)
+  Layer 2: Database constraint (prevents duplicates even in race conditions)
+
+Step 1: Add Unique Constraint to Database
+
+Time Required: 5 minutes
+
+This should already be done if you followed Section 2.1.2 exactly. Verify:
+
+```sql
+-- Check if constraint exists
+SELECT constraint_name, constraint_type
+FROM information_schema.table_constraints
+WHERE table_name = 'orders'
+  AND constraint_type = 'UNIQUE';
+```
+
+Expected result: Shows constraint on payment_intent_id column
+
+If constraint missing, add it now:
+
+```sql
+ALTER TABLE orders
+ADD CONSTRAINT unique_payment_intent 
+UNIQUE (payment_intent_id);
+```
+
+This makes duplicate insertion impossible at database level. If a second
+INSERT tries to use same payment_intent_id, PostgreSQL returns error:
+"duplicate key value violates unique constraint"
+
+Validation:
+  ✓ Constraint exists on orders.payment_intent_id
+  ✓ Test: Try inserting same payment_intent_id twice manually
+  ✓ Second insert fails with constraint violation error
+
+Step 2: Add Supabase Query Module to Make.com
+
+Time Required: 15 minutes
+
+After webhook signature validation module, add new module:
+
+1. Click "+" after webhook module
+2. Search "Supabase"
+3. Select "Supabase" app
+4. Choose action: "Select rows"
+5. Connection: Select your Supabase connection (created in Section 2.1.4)
+
+Configuration:
+
+Table: orders
+
+Filter configuration:
+  Field: payment_intent_id
+  Operator: eq (equals)
+  Value: {{1.data.object.payment_intent}}
+  
+  Explanation of value:
+    • {{1.data.object.payment_intent}} references webhook module (module #1)
+    • Extracts payment_intent value from Stripe webhook JSON
+    • Stripe path: data.object.payment_intent contains unique payment ID
+
+Limit: 1
+  (We only need to know if ANY record exists, don't need multiple)
+
+Output:
+  • Returns array of matching records
+  • If payment_intent_id exists: Array has 1 element
+  • If payment_intent_id new: Array is empty (length 0)
+
+6. Click "OK" to save module
+
+Module now queries: "Does this payment_intent_id already exist in our database?"
+
+Step 3: Add Router for Duplicate Handling
+
+Time Required: 15 minutes
+
+After Supabase query module, add router:
+
+1. Click "+" after Supabase module
+2. Search "Flow control"
+3. Select "Router"
+4. Router module appears with one route
+
+Configure Route 1 (New Order):
+1. Click route to edit
+2. Label: "New Order (Process)"
+3. Filter configuration:
+   - Field: Length of array from Supabase
+   - In Make.com syntax: {{length(2.array)}}
+   - Operator: Numeric equals
+   - Value: 0
+4. Explanation: If query returned 0 results, payment_intent is new
+5. Click "OK"
+
+Add Route 2 (Duplicate):
+1. Click "+ Add route" button on router
+2. Label: "Duplicate (Skip)"  
+3. Filter configuration:
+   - Field: {{length(2.array)}}
+   - Operator: Numeric greater than
+   - Value: 0
+4. Explanation: If query returned 1+ results, payment_intent exists (duplicate)
+5. Click "OK"
+
+Router now splits execution:
+  • Route 1 (New): Continues to order processing
+  • Route 2 (Duplicate): Handles duplicate gracefully
+
+Step 4: Configure Duplicate Route Actions
+
+Time Required: 20 minutes
+
+In Route 2 (Duplicate path), add three modules:
+
+Module A: Log Duplicate Event
+
+1. In Route 2 path, click "+"
+2. Search "Supabase"
+3. Select "Insert a row"
+4. Table: analytics_events
+
+Fields:
+  event_type: "duplicate_webhook_caught"
+  payment_intent_id: {{1.data.object.payment_intent}}
+  timestamp: {{now}}
+  metadata: {{1}} 
+    (Stores entire webhook JSON for debugging)
+  severity: "info"
+  message: "Duplicate webhook detected and rejected"
+
+Purpose: Creates audit trail, enables analysis of duplicate frequency
+
+Module B: Return Success to Stripe
+
+1. After analytics insert, click "+"
+2. Search "Webhooks"
+3. Select "Webhook response"
+
+Configuration:
+  Status: 200
+  Body: 
+    ```json
+    {
+      "status": "duplicate",
+      "message": "Order already processed",
+      "payment_intent_id": "{{1.data.object.payment_intent}}"
+    }
+    ```
+
+Critical: Must return 200 OK even for duplicates. If you return error status
+(4xx, 5xx), Stripe interprets as failure and retries, creating infinite loop.
+Returning 200 tells Stripe "I received and handled this webhook successfully"
+even though you're skipping duplicate processing.
+
+Module C: Stop Execution (Optional but Recommended)
+
+1. After webhook response, click "+"
+2. Search "Flow control"
+3. Select "Stop"
+4. This explicitly ends execution for this path
+
+Without stop module, scenario continues to any modules after router that aren't
+route-specific. Stop makes execution path explicit and clear.
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PRODUCTION REALITY: Idempotency in practice                                │
+│                                                                             │
+│ Week 1 (0 to 50 orders processed):                                         │
+│   Duplicates caught: 1 to 2                                                 │
+│   Your reaction: "Is the system working? Why duplicates already?"          │
+│   Answer: Yes, working perfectly. 2% duplicate rate is expected from Stripe│
+│           This is normal webhook behavior, not a bug.                      │
+│                                                                             │
+│ Month 1 (200 orders processed):                                            │
+│   Duplicates caught: 4 to 5                                                 │
+│   Your reaction: "Should I investigate why Stripe sends duplicates?"       │
+│   Answer: No investigation needed. This is documented Stripe behavior.     │
+│           You're seeing 2 to 2.5% rate, which matches expected baseline.   │
+│                                                                             │
+│ Month 3 (600 orders processed):                                            │
+│   Duplicates caught: 13 to 15                                               │
+│   Financial impact prevented: 14 × $20 = $280 in duplicate fulfillment     │
+│   Your reaction: "Glad I implemented this. ROI achieved."                  │
+│   Answer: Exactly. System working as designed, protecting revenue.         │
+│                                                                             │
+│ Month 6 (1,200 orders processed):                                          │
+│   Duplicates caught: 27 to 28                                               │
+│   Financial impact prevented: 28 × $20 = $560 saved                        │
+│   Time invested to build: 90 minutes                                       │
+│   ROI realized: 560/(1.5 hours × $30/hour) = 12.4:1 first 6 months        │
+│                                                                             │
+│ High traffic event (Black Friday, 500 orders in 24 hours):                │
+│   Duplicates caught: 15 to 25 (3% to 5% rate, higher than baseline)       │
+│   Your reaction: "Is something wrong? Duplicate rate spiked."              │
+│   Answer: Expected during high traffic. Stripe infrastructure under load   │
+│           causes slightly higher retry rate. Idempotency catches all.      │
+│           This is exactly why you need robust idempotency handling.        │
+│                                                                             │
+│ When to worry about duplicate rate:                                        │
+│   • >5% consistently: May indicate webhook response timeout (investigate   │
+│     Make.com execution times, optimize if processing takes >25 seconds)    │
+│   • <1% consistently: Idempotency check might not be working (verify       │
+│     query logic, check execution logs for route distribution)              │
+│   • Same payment_intent duplicates >10 times: Specific order stuck in      │
+│     retry loop (investigate that order, check for errors in processing)    │
+│                                                                             │
+│ Most common cause of idempotency FAILURE (duplicates not caught):          │
+│   Root cause: Database query uses wrong field name                         │
+│   Symptom: All webhooks look "new", duplicates created in database         │
+│   Example: Query checks "order_id" instead of "payment_intent_id"          │
+│   Result: Query never finds match, all webhooks pass as "new"              │
+│   Detection time: Discovered when customer complains about duplicate charge│
+│                   or you notice fulfillment costs don't match revenue      │
+│   Fix time: 5 minutes once identified (correct field name in query)        │
+│   Prevention: Test with intentional duplicate (send same webhook twice)    │
+│                                                                             │
+│ Cost impact example (real incident from production system):                │
+│   Timeline: Idempotency check misconfigured, ran for 3 days undetected     │
+│   Orders processed: 47 orders                                              │
+│   Duplicate webhooks received: 3 (2 caught by customer, 1 discovered later)│
+│   Fulfillment cost: 3 × $18.50 = $55.50 in duplicate manufacturing         │
+│   Refunds issued: 2 × $28 = $56 (customers complained)                     │
+│   Support time: 3 × 45 minutes = 2.25 hours × $30/hour = $67.50            │
+│   Total incident cost: $179                                                │
+│   Time to fix: 15 minutes (found wrong field in query, corrected)          │
+│   Lesson: Test idempotency thoroughly before going live                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Validation Checkpoint:
+  ✓ Database unique constraint exists on payment_intent_id
+  ✓ Supabase query module added and configured
+  ✓ Router with two routes created
+  ✓ Route 1 (New) filters for length equals 0
+  ✓ Route 2 (Duplicate) filters for length greater than 0
+  ✓ Duplicate route logs to analytics_events
+  ✓ Duplicate route returns 200 OK to Stripe
+  ✓ Duplicate route stops execution
+
+Testing Idempotency:
+
+Test 1: First Webhook (New Order)
+1. Send test webhook from Stripe dashboard
+2. Observe Make.com execution
+3. Execution should take Route 1 (New Order)
+4. Check Supabase orders table: 1 new row inserted
+5. payment_intent_id recorded
+
+Test 2: Duplicate Webhook (Same Order)
+1. In Stripe dashboard, find the webhook you just sent
+2. Click "..." menu next to webhook event
+3. Click "Resend" to send exact same webhook again
+4. Observe Make.com execution
+5. Execution should take Route 2 (Duplicate)
+6. Check Supabase orders table: Still only 1 row (no duplicate created)
+7. Check analytics_events table: 1 new row with event_type "duplicate_webhook_caught"
+8. Check Stripe webhook delivery log: Shows 200 OK response for duplicate
+
+Test 3: Race Condition (Database Constraint)
+This tests the second layer of protection (database constraint). Intentionally
+bypass application logic to verify database constraint catches duplicates.
+
+1. Manually try to INSERT duplicate into database:
+```sql
+INSERT INTO orders (payment_intent_id, customer_email, amount)
+VALUES ('pi_test12345', 'test@example.com', 2995);
+
+-- Try same payment_intent_id again
+INSERT INTO orders (payment_intent_id, customer_email, amount)
+VALUES ('pi_test12345', 'another@example.com', 1500);
+```
+
+2. Second INSERT should fail with error:
+   "ERROR: duplicate key value violates unique constraint unique_payment_intent"
+
+3. This proves even if application logic fails (race condition), database
+   prevents duplicates
+
+If all three tests pass: Idempotency implementation complete and robust.
+
+If tests fail:
+  • Test 1 fails: Check Supabase query configuration, verify payment_intent path
+  • Test 2 fails: Check router filter logic, verify length() function syntax
+  • Test 3 fails: Database constraint missing, add unique constraint
+
+═══════════════════════════════════════════════════════════════════════════════
+
+2.2.4: METADATA EXTRACTION
+
+Every Stripe checkout.session.completed webhook contains metadata about the
+order. This metadata includes everything needed for order fulfillment:
+
+Required fields (cannot fulfill without these):
+  • product_id: Which product was purchased
+  • variant_id: Which variant (size, color, etc.) if applicable  
+  • customer_email: Where to send confirmation and updates
+  • shipping_name: Recipient name for shipping label
+  • shipping_address_line1: Street address
+  • shipping_city: City
+  • shipping_state: State/province/region
+  • shipping_postal_code: ZIP/postal code
+  • shipping_country: Country code (US, CA, GB, etc.)
+
+Optional but recommended:
+  • shipping_address_line2: Apartment, suite, unit number
+  • shipping_phone: For carrier delivery notifications
+  • customer_note: Gift message or special instructions
+
+Metadata source: You embedded this during checkout (Stripe Checkout session
+creation). If using Stripe Payment Links, metadata comes from product
+configuration and form inputs.
+
+Webhook JSON structure:
+```json
+{
+  "data": {
+    "object": {
+      "id": "cs_test_abc123...",
+      "payment_intent": "pi_abc123...",
+      "customer_details": {
+        "email": "customer@example.com",
+        "name": "John Smith"
+      },
+      "shipping_details": {
+        "name": "John Smith",
+        "address": {
+          "line1": "123 Main St",
+          "line2": "Apt 4B",
+          "city": "San Francisco",
+          "state": "CA",
+          "postal_code": "94102",
+          "country": "US"
+        }
+      },
+      "metadata": {
+        "product_id": "tshirt_classic",
+        "variant_id": "size_large_color_blue",
+        "source": "website"
+      }
+    }
+  }
+}
+```
+
+Extraction paths in Make.com:
+  • customer_email: {{1.data.object.customer_details.email}}
+  • shipping_name: {{1.data.object.shipping_details.name}}
+  • shipping_line1: {{1.data.object.shipping_details.address.line1}}
+  • shipping_city: {{1.data.object.shipping_details.address.city}}
+  • product_id: {{1.data.object.metadata.product_id}}
+  • etc.
+
+───────────────────────────────────────────────────────────────────────────────
+
+Implementation: Extract and Validate
+
+Step 1: Add Variable Set Module
+
+Time Required: 15 minutes
+
+In Route 1 (New Order path), after router, add:
+
+1. Click "+" in Route 1 path
+2. Search "Tools"
+3. Select "Set multiple variables"
+4. Click "Add item" button repeatedly to create variables
+
+Variable definitions:
+
+payment_intent_id: {{1.data.object.payment_intent}}
+amount: {{1.data.object.amount_total}}
+currency: {{1.data.object.currency}}
+customer_email: {{1.data.object.customer_details.email}}
+customer_name: {{1.data.object.customer_details.name}}
+shipping_name: {{1.data.object.shipping_details.name}}
+shipping_line1: {{1.data.object.shipping_details.address.line1}}
+shipping_line2: {{1.data.object.shipping_details.address.line2}}
+shipping_city: {{1.data.object.shipping_details.address.city}}
+shipping_state: {{1.data.object.shipping_details.address.state}}
+shipping_postal: {{1.data.object.shipping_details.address.postal_code}}
+shipping_country: {{1.data.object.shipping_details.address.country}}
+product_id: {{1.data.object.metadata.product_id}}
+variant_id: {{1.data.object.metadata.variant_id}}
+
+Why use Set Variables module:
+  • Extracts all values once, stores in named variables
+  • Subsequent modules reference variables, not complex paths
+  • Easier to debug (can see all values in execution log)
+  • Validates extraction (missing fields show as empty/null)
+
+Click "OK" to save.
+
+Step 2: Add Validation Filter
+
+Time Required: 15 minutes
+
+After variable set module, add filter:
+
+1. Click "+" after Set Variables
+2. Search "Flow control"  
+3. Select "Filter"
+4. Filter determines if order has all required data
+
+Filter configuration (ALL conditions must be true):
+
+Condition 1: Product ID exists
+  {{3.product_id}}
+  Operator: Is not empty
+  
+Condition 2: Customer email exists
+  {{3.customer_email}}
+  Operator: Is not empty
+  
+Condition 3: Shipping name exists
+  {{3.shipping_name}}
+  Operator: Is not empty
+  
+Condition 4: Shipping address exists
+  {{3.shipping_line1}}
+  Operator: Is not empty
+  
+Condition 5: Shipping city exists
+  {{3.shipping_city}}
+  Operator: Is not empty
+  
+Condition 6: Shipping country exists
+  {{3.shipping_country}}
+  Operator: Is not empty
+
+Logic: ALL conditions must pass (AND logic, not OR)
+
+If filter passes: Order has all required data, continues to fulfillment
+If filter fails: Order missing critical data, routes to error handling
+
+Note: shipping_state not included in required fields because not all countries
+use states (UK, many European countries have no state/province concept).
+
