@@ -6464,123 +6464,150 @@ PART 3: INTELLIGENCE LAYER
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ QUICK JUMP MENU: Part 3                                                     │
 │                                                                             │
-│ [3.1] Analytics Infrastructure       [3.2] Performance Monitoring Setup     │
-│ [3.3] Cost Optimization Algorithms   [3.4] Automated Reporting Systems      │
-│ [3.5] Business Intelligence Queries  [3.6] Trend Analysis and Forecasting   │
+│ [3.1] Analytics Infrastructure           [3.2] Performance and SLOs        │
+│ [3.3] Cost Optimization Engines          [3.4] Automated Reporting         │
+│ [3.5] Intelligence Query Library         [3.6] Trend and Capacity Models   │
 │                                                                             │
-│ Need help?                                                                  │
-│   Metrics unclear → 3.1                 Dashboards slow → 3.2               │
-│   Costs drifting → 3.3                  Leadership wants reports → 3.4      │
-│   SQL library missing → 3.5             Planning growth → 3.6               │
+│ Common needs:                                                               │
+│   Numbers not trusted → 3.1                Pages loading slowly → 3.2       │
+│   Costs creeping up → 3.3                  Leadership wants updates → 3.4   │
+│   Ad hoc SQL chaos → 3.5                   Planning next quarter → 3.6      │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ TIME REALITY CHECK                                                          │
 │                                                                             │
-│ Vendor marketing promises:  "Connect data once, dashboards appear in 15 min"│
-│ Actual production reality:  22 to 32 hours for a reliable intelligence tier │
+│ Vendor promises:   "Connect a data source and get insights in minutes"      │
+│ Real production:   24 to 36 hours of focused work for a reliable layer      │
 │                                                                             │
-│ Time breakdown (per 1,000 orders/month baseline):                           │
-│   • Data model audit and gap closure:               4 hours                 │
-│   • Analytics warehouse configuration:              5 hours                 │
-│   • Metric definitions with owners:                 3 hours                 │
-│   • Dashboard creation and iteration:               6 hours                 │
-│   • Alert tuning and runbooks:                      2 hours                 │
-│   • Automation and scheduling:                      4 hours                 │
-│   • Executive-ready reporting polish:               2 hours                 │
+│ Time breakdown (baseline at 1,000 orders per month):                        │
+│   • Source data audit and corrections:              4 hours                 │
+│   • Analytics schema and materialized views:        5 hours                 │
+│   • Metric contract definitions with owners:        3 hours                 │
+│   • Dashboards plus alert wiring:                   6 hours                 │
+│   • Cost routing engine experiments:                4 hours                 │
+│   • Reporting automation and review loop:           4 hours                 │
+│   • Trend modeling and capacity thresholds:         3 to 10 hours           │
 │                                                                             │
-│ Payoff: Predictable trends, faster incident triage, provable ROI on         │
-│ automation work, and early detection of provider degradation.               │
+│ Payoff: Faster decisions, less guesswork, early incident detection, and     │
+│ cost reductions that compound every month.                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ═══════════════════════════════════════════════════════════════════════════════
 
 OVERVIEW: What Part 3 Delivers
 
-When Part 3 is complete you gain:
-  ✓ Centralized analytics warehouse fed by production data within 10 minutes
-  ✓ Real-time performance dashboards covering latency, error rates, and costs
-  ✓ Automated cost routing recommendations based on live provider data
-  ✓ Scheduled executive reports with narrative context
-  ✓ SQL library for finance, operations, and marketing stakeholders
-  ✓ Forecasting models predicting volume, cost, and incident probability
+When Part 3 is complete your system gains a nervous system and a brain, not
+only muscles.
+
+Capabilities:
+  ✓ Analytics warehouse fed continuously from production systems
+  ✓ Dashboards that answer operations, finance, and leadership questions
+  ✓ Service level objectives with alerting and runbooks
+  ✓ Routing engine that sends work to the best provider on any given day
+  ✓ Automated reports that summarize health and financial impact
+  ✓ Forecasts that warn you before capacity or margin become problems
 
 Success Metrics:
-  • Data freshness: <10 minutes lag for operational dashboards
-  • Alert fidelity: <5% false positives, <2% missed anomalies
-  • Cost optimization: 5 to 9% gross margin improvement after routing logic
-  • Reporting labor savings: 4+ hours per week removed from manual updates
-  • Forecast accuracy: ±7% against actuals over 30 day horizon
+  • Data freshness: operational dashboards no more than 10 minutes behind
+  • Signal quality: fewer than 5 percent false positive alerts, fewer than 2 percent missed significant incidents
+  • Cost impact: 5 to 12 percent improvement in gross margin per order once routing is active
+  • Manual reporting: 4 to 6 hours reclaimed every week from spreadsheet work
+  • Forecast accuracy: within 7 percent of reality over a rolling 30 day window
 
-Intelligence Data Flow Diagram:
+High Level Intelligence Diagram:
 
-            ┌───────────────────────────┐
-            │  Production Datastores    │
-            │  (Supabase, Make logs)    │
-            └────────────┬──────────────┘
+           ┌──────────────────────────────┐
+           │  Production Workloads        │
+           │  (orders, webhooks, errors)  │
+           └─────────────┬────────────────┘
                          │
-                ETL Sync every 5 minutes
+                Extract, Transform, Load
                          │
-            ┌────────────▼──────────────┐
-            │  Analytics Staging Layer  │
-            │  (Materialized views)     │
-            └────────────┬──────────────┘
-                         │ Transform + Validate
-            ┌────────────▼──────────────┐
-            │  Intelligence Warehouse   │
-            │  (Supabase analytics db)  │
-            └────────────┬──────────────┘
+           ┌─────────────▼────────────────┐
+           │  Analytics Warehouse          │
+           │  (Supabase analytics schema)  │
+           └─────────────┬────────────────┘
                          │
-      ┌──────────────────┼───────────────────┐
-      │                  │                   │
-┌─────▼─────┐     ┌──────▼─────┐      ┌──────▼─────┐
-│ Dashboards│     │ Alerting   │      │ Scheduled  │
-│ (Metabase│     │ (Better     │      │ Reports    │
-│ or Light │     │ Uptime +    │      │ (Notion,   │
-│ BI tool) │     │ Discord)    │      │ Docs)      │
-└──────────┘     └─────────────┘      └────────────┘
-                         │
-                  Decision Engines
-                         │
-                 Cost Routing + Planning
+     ┌───────────────────┼────────────────────┐
+     │                   │                    │
+┌────▼─────┐      ┌──────▼───────┐     ┌──────▼───────┐
+│ Dashboards│      │ Alert Engine │     │ Report Engine│
+└────┬──────┘      └─────┬────────┘     └─────┬────────┘
+     │                   │                    │
+     ▼                   ▼                    ▼
+ Decision Makers   On Call Engineers     Leadership Teams
+
+Part 3 ensures every decision in Parts 4 to 7 is backed by live data instead of
+intuition.
 
 ═══════════════════════════════════════════════════════════════════════════════
 
 3.1 ANALYTICS INFRASTRUCTURE
 
-Why this matters:
-Analytics without structure is noise. You already collect hundreds of data
-points yet leadership needs consistent, trusted metrics. This subsection builds
-the warehouse foundation that every dashboard, alert, and forecast relies on.
+Why this matters
 
-Implementation Steps
+Intelligence without a solid data foundation turns into dashboard theater. This
+subsection ensures you have a trustworthy analytics layer.
 
-Step 1: Audit Source Tables (Time: 45 minutes)
-1. List every production table relevant to analytics:
-   • orders, order_line_items, fulfillment_events
-   • payments, error_events, provider_costs
-   • manual_queue, customers, product_catalog
-2. Verify each table has:
-   • updated_at column with default NOW()
-   • primary key
-   • foreign key relationships documented in ERD
-3. Identify missing fields (examples):
-   • fulfillment_events missing provider_response_ms
-   • order_line_items missing margin_cents column
-4. Create remediation backlog, assign owners, add to INTEGRATION_CHECKLIST.md.
+Five dimensions:
+  • Technical: Defines schemas, views, and refresh logic so numbers are correct
+  • Temporal: Controls how fresh data is and how quickly problems appear in charts
+  • Financial: Quantifies margin, provider cost, and failure impact in one place
+  • Cognitive: Reduces mental overhead by standardizing metric names and definitions
+  • Strategic: Gives leadership a single reference when deciding where to invest
+
+3.1.1 Source Data Audit
+
+Objective: Make sure the inputs to analytics are complete, consistent, and ready to trust.
+
+Steps:
+1. List core tables and owners:
+   • orders, order_line_items, payments
+   • fulfillment_events, error_events, manual_queue
+   • customers, product_catalog, provider_costs
+2. For each table confirm:
+   • Primary key exists and is unique
+   • created_at and updated_at fields exist and default to NOW()
+   • Foreign keys are documented in your ERD even if not enforced in database
+3. Look for common problems:
+   • Null values in fields that should always have values
+   • Free form text where enumerated types would reduce ambiguity
+   • Missing constraints that allow duplicates in analytics critical fields
 
 Validation checkpoint:
-  □ ERD updated with every analytics relevant table
-  □ Missing column list documented with fix date
+  □ Every analytics table has clear owner
+  □ Null rates for required fields recorded and added to a cleanup backlog
 
-Step 2: Create Analytics Schema (Time: 60 minutes)
-1. In Supabase, create dedicated schema `analytics`.
-2. Grant read-only access to analysts:
+Production Reality Box:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PRODUCTION REALITY: Garbage In, Garbage Everywhere                          │
+│                                                                             │
+│ Teams that skip data audits often ship dashboards with significant errors.  │
+│ In one production system, 17 percent of orders had missing cost data which  │
+│ made early margin charts look fantastic yet completely wrong. A single      │
+│ three hour audit prevented months of bad decisions.                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+3.1.2 Analytics Schema and Views
+
+Goal: Separate operational tables from analytics views so experimentation never
+risks production writes.
+
+Implementation:
+1. Create dedicated schema:
 ```sql
-CREATE SCHEMA analytics AUTHORIZATION postgres;
-GRANT USAGE ON SCHEMA analytics TO analyst_role;
+CREATE SCHEMA IF NOT EXISTS analytics AUTHORIZATION postgres;
 ```
-3. Add materialized views for common aggregations:
+2. Grant read only roles:
+```sql
+CREATE ROLE analytics_reader;
+GRANT USAGE ON SCHEMA analytics TO analytics_reader;
+GRANT SELECT ON ALL TABLES IN SCHEMA analytics TO analytics_reader;
+ALTER DEFAULT PRIVILEGES IN SCHEMA analytics
+GRANT SELECT ON TABLES TO analytics_reader;
+```
+3. Build materialized views for common aggregations, for example:
 ```sql
 CREATE MATERIALIZED VIEW analytics.daily_orders AS
 SELECT
@@ -6592,27 +6619,24 @@ SELECT
 FROM orders
 GROUP BY order_date;
 ```
-4. Schedule refresh every 10 minutes via Supabase cron or Make.com PostgreSQL
-module.
+4. Add more views:
+   • analytics.daily_provider_performance
+   • analytics.error_summary
+   • analytics.cohort_first_purchase
+
+Refresh strategy:
+  • Use Supabase cron or Make.com database modules
+  • Refresh most views every 10 minutes, heavyweight ones every hour
 
 Validation checkpoint:
-  □ Materialized views refresh successfully (monitor `pg_matviews`)
-  □ Analyst role can query analytics schema without write access
+  □ All views refresh successfully under realistic load
+  □ Dashboards never query raw operational tables directly
 
-Step 3: Define Metric Contracts (Time: 90 minutes)
-1. For each critical metric document:
-   • Name, owner, calculation SQL, expected range, alert thresholds.
-2. Use template:
-```
-Metric: Order Conversion Rate
-Owner: Operations Lead
-Formula: completed_orders / checkout_sessions
-Refresh cadence: 10 minutes
-Healthy range: 92-98 percent
-Alert: Notify when <90 percent for 3+ intervals
-```
-3. Store contracts in `analytics_metric_contracts` table to keep metadata near
-the data.
+3.1.3 Metric Contracts
+
+Purpose: Stop arguments about what a metric means by writing down one contract per metric.
+
+Metric contract table:
 ```sql
 CREATE TABLE analytics_metric_contracts (
   id SERIAL PRIMARY KEY,
@@ -6627,43 +6651,62 @@ CREATE TABLE analytics_metric_contracts (
 );
 ```
 
-Validation checkpoint:
-  □ Every metric powering dashboards has a contract entry
-  □ Owner email exists and acknowledges accountability
+For each metric capture:
+  • Definition in plain language
+  • Exact SQL used to calculate it
+  • Owner who answers questions about it
+  • Healthy range and alert rules
+
+Example contract entry:
+  • Metric: Fulfillment Success Rate
+  • Owner: operations@yourstore
+  • Calculation: successful fulfillment_events divided by total fulfillment_events in last 24 hours
+  • Healthy range: 97 to 99.9 percent
+  • Alert: notify when below 96 percent for two consecutive intervals
+
+Testing:
+1. Ask everyone on the team to define success rate before reading the contract.
+2. Compare answers with the contract.
+3. Resolve any ambiguity before using metric in decisions.
 
 Production Reality Box:
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ PRODUCTION REALITY: Metric Drift Happens                                     │
+│ PRODUCTION REALITY: Metric Arguments Waste Hours                            │
 │                                                                             │
-│ 41 percent of automation teams reported at least one catastrophic decision  │
-│ caused by a silently broken metric. Contracts create human accountability.  │
-│ Once instituted, false decision rate drops below 3 percent.                 │
+│ A single poorly defined success metric can consume entire planning          │
+│ meetings. Written contracts with owners routinely save two to four hours    │
+│ per month across the team.                                                 │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 3.1 Testing Procedures
-1. Run `SELECT * FROM analytics.daily_orders LIMIT 5;` to confirm data.
-2. Compare dashboard numbers against source application for one day.
-3. Trigger simulated delay by pausing refresh job, confirm freshness alert fires.
+1. Run sight tests: pick ten historical days and recompute metrics manually.
+2. Compare manual results with dashboards.
+3. Record any differences and fix either data or definitions.
 
 Pass criteria:
-  ✓ Dashboard matches source to within 0.5 percent
-  ✓ Freshness alert triggered within 12 minutes of pause
+  ✓ All core metrics match manual calculations within one percent
+  ✓ Every metric on dashboards has a contract entry
 
 ═══════════════════════════════════════════════════════════════════════════════
 
-3.2 PERFORMANCE MONITORING SETUP
+3.2 PERFORMANCE AND SERVICE LEVEL OBJECTIVES
 
-Goal: Achieve high signal dash plus alert coverage without alert fatigue.
+Why this matters
 
-Implementation Steps
+Without measurable performance targets you will not know when the system is
+too slow or too flaky until customers complain.
 
-Step 1: Instrument Latency Metrics (Time: 45 minutes)
-1. In Make.com, surround critical modules with timestamp logging:
-   • Payment webhook receive time
-   • Idempotency check end time
-   • Provider API submit start and end times
-   • Supabase insert completion time
-2. Insert records into `performance_events` table:
+Five dimensions:
+  • Technical: Response times, throughput, and error rates are measured consistently
+  • Temporal: Problems show up within minutes rather than hours or days
+  • Financial: Slow systems increase support tickets and cancellations
+  • Cognitive: SLOs clarify what good looks like so engineers make aligned tradeoffs
+  • Strategic: Leadership can see where performance investments pay off
+
+3.2.1 Instrumentation
+
+Steps:
+1. Create performance_events table:
 ```sql
 CREATE TABLE performance_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -6674,356 +6717,368 @@ CREATE TABLE performance_events (
   created_at TIMESTAMP DEFAULT NOW()
 );
 ```
-3. Use Make.com "Set variable" to compute `duration_ms` per stage.
+2. In Make.com record durations for:
+   • Payment webhook receive to acknowledgement
+   • Idempotency check duration
+   • Provider API request and response
+   • Database write for order and fulfillment records
+3. Use consistent event_names such as payment_webhook_total or provider_call_printful.
 
-Validation:
-  □ At least 1,000 events logged per day
-  □ P95 duration < 3,500 ms for fulfillment cascade
+Validation checkpoint:
+  □ At least several hundred events captured per day
+  □ No obvious gaps in critical flows
 
-Step 2: Build Monitoring Dashboards (Time: 90 minutes)
-1. Tooling: Metabase, Redash, or Supabase dashboard.
-2. Dashboard layout:
-   • Tile 1: Overall order processing duration (P50, P90, P99)
-   • Tile 2: Provider success rate (stacked bar)
-   • Tile 3: Error frequency (top 5 errors last 24h)
-   • Tile 4: Cost per order trend (primary vs failover)
-   • Tile 5: Alert feed (Better Uptime incidents + Discord manual queue)
-3. Add quick filters for time range and provider.
+3.2.2 Define SLOs
 
-Validation:
-  □ Dashboard loads in under 5 seconds
-  □ Every visualization references metric contract
+Service level objectives examples:
+  • Payment processing end to end: P95 below 2,500 milliseconds
+  • Fulfillment submission: P95 below 3,500 milliseconds
+  • Webhook error rate: below 1.5 percent of total webhooks
 
-Step 3: Configure Alert Thresholds (Time: 60 minutes)
-1. Use Better Uptime or Grafana Cloud:
-   • Endpoint monitors for webhook receivers, provider APIs, Supabase.
-   • Synthetic order flow test hourly.
-2. Set thresholds:
-   • Payment latency > 1,500 ms for 3 intervals → warning
-   • Provider success rate < 93 percent for 2 intervals → critical
-   • Cost per order > baseline + 12 percent → warning
-3. Alerts go to Discord channel with severity tags.
+Store SLO definitions in a dedicated table or configuration document with:
+  • Target, window, and acceptable error budget
+  • Owner responsible for the objective
+  • Linked runbooks for breaches
 
-Validation:
-  □ Test each alert by exceeding thresholds with test data
-  □ Alert arrives within 60 seconds
+3.2.3 Dashboards and Alerts
+
+Dashboards:
+  • Timeseries of P50, P95, P99 for each major path
+  • Stack chart of errors by type
+  • Error budget burn down over the last 30 days
+
+Alerting:
+  • Warning when performance approaches SLO edge for sustained period
+  • Critical when SLO is breached in consecutive intervals
+  • Alerts routed to Discord channels with severity tags
+
+Testing:
+1. Intentionally slow a staging scenario to trigger alerts.
+2. Confirm alerts arrive and runbooks are followed.
+3. Measure time between incident injection and detection.
 
 Production Reality Box:
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ PRODUCTION REALITY: Alert Fatigue Kills Attention                           │
+│ PRODUCTION REALITY: SLOs Keep Everyone Honest                               │
 │                                                                             │
-│ Teams receiving more than 12 alerts per week respond to only 64 percent of  │
-│ them. Keep noise low: tune thresholds monthly and archive stale alerts.     │
+│ When performance targets stay implicit, every team member carries a         │
+│ different mental model. Formal SLOs convert vague expectations into clear   │
+│ commitments the system must meet.                                          │
 └─────────────────────────────────────────────────────────────────────────────┘
-
-3.2 Testing Procedures
-1. Run synthetic order scenario to intentionally slow provider call.
-2. Confirm duration breach triggers warning alert.
-3. Restore normal speed, ensure alert auto-resolves.
 
 ═══════════════════════════════════════════════════════════════════════════════
 
-3.3 COST OPTIMIZATION ALGORITHMS
+3.3 COST OPTIMIZATION ENGINES
 
-Objective: Route orders to the best provider dynamically based on live cost and
-performance data rather than static assumptions.
+Why this matters
 
-Implementation Steps
+Your automation can quietly bleed margin if it always chooses the same
+provider regardless of live cost and reliability.
 
-Step 1: Collect Provider Cost Telemetry (Time: 40 minutes)
-1. Extend `fulfillment_events` table with columns:
-   • provider_cost_cents
-   • provider_shipping_cents
-   • response_time_ms
-   • incident_flag (boolean)
-2. Populate fields during each provider call.
-3. Add nightly job to reconcile provider invoices with recorded cost to catch
-discrepancies >1.8 percent.
+Five dimensions:
+  • Technical: Routing logic reads from fresh analytics rather than hard coded choices
+  • Temporal: Routing reacts to provider incidents within hours instead of weeks
+  • Financial: Small savings per order compound into thousands per year
+  • Cognitive: Clear rules reduce debate about which provider to use
+  • Strategic: Routing becomes an advantage when negotiating with vendors
+
+3.3.1 Collect Provider Telemetry
+
+Extend fulfillment_events:
+  • provider_name
+  • provider_cost_cents
+  • provider_shipping_cents
+  • response_time_ms
+  • incident_flag
+
+Populate these fields for each fulfillment call.
+
+Nightly reconciliation:
+  • Compare recorded costs with provider invoices
+  • Store differences and investigate any variance above two percent
+
+Validation checkpoint:
+  □ Zero missing values for cost fields in last week
+  □ Reconciliation variance stays below one percent
+
+3.3.2 Scoring and Routing
+
+Define score:
+```
+score = cost_weight * cost_index
+      + speed_weight * speed_index
+      + success_weight * success_index
+```
+
+Indexes:
+  • cost_index: normalized cost compared to baseline provider
+  • speed_index: normalized response time compared to target
+  • success_index: inverse of failure rate
+
+Weights live in routing_parameters table so you can tune strategy without code changes.
+
+Routing behavior:
+  • Choose provider with lowest score subject to guardrails
+  • Respect manual overrides during experiments or maintenance
+
+3.3.3 Guardrails and Experiments
+
+Guardrails:
+  • Minimum recent success rate for eligibility, for example 93 percent
+  • Maximum allowed cost delta over baseline, for example 15 percent
+  • Fail closed to primary provider when analytics data stale
+
+Experiments:
+  • Run A and B routing strategies with controlled percentages of traffic
+  • Compare cost and failure outcomes before changing defaults
+
+Production Reality Box:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PRODUCTION REALITY: Margins Move Slowly Then Suddenly                       │
+│                                                                             │
+│ Provider price changes, shipping surcharges, and currency shifts rarely hit │
+│ all at once, yet over six months they compound. Routing engines that read   │
+│ from live cost data catch these trends early and prevent surprises.         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Testing:
+1. Simulate higher cost and slower response for one provider in staging.
+2. Confirm routing engine reduces traffic to that provider.
+3. Run monthly review that compares actual margin with a static routing baseline.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+3.4 AUTOMATED REPORTING
+
+Why this matters
+
+Without automation, reporting consumes evenings and weekends. With automation,
+reports arrive on time and humans focus on interpretation instead of copying numbers.
+
+3.4.1 Define Audiences and Cadence
+
+Common patterns:
+  • Weekly operations review: operations lead, support, engineering
+  • Monthly executive review: founder, finance, marketing
+  • Quarterly strategic review: leadership plus advisors
+
+For each meeting define:
+  • Decision it supports
+  • Metrics needed
+  • Level of detail
+
+3.4.2 Build Templates
+
+Use a document template in Notion or Google Docs with sections:
+  • Headline summary
+  • Key metrics with trend arrows
+  • Highlights and lowlights
+  • Incidents and follow up actions
+  • Cost summary and savings
+  • Next month focus
+
+Embed charts with public or secure links from your dashboard tool.
+
+3.4.3 Automate Population and Delivery
+
+Make.com scenario example:
+  • Trigger every Monday at 07:00
+  • Query analytics views
+  • Fill template via API with metric values and chart links
+  • Post link to Discord leadership channel or send email
 
 Validation:
-  □ No NULL provider_cost entries in last 7 days
-  □ Invoice reconciliation variance <1 percent
+  □ Report created automatically for several consecutive cycles
+  □ Only human work is commentary and nuanced interpretation
 
-Step 2: Create Dynamic Routing Score (Time: 75 minutes)
-1. Formula:
-```
-score = (normalized_cost_weight * cost_index) +
-        (normalized_speed_weight * speed_index) +
-        (normalized_success_weight * success_index)
-```
-2. Normalize each index to 0-100 scale.
-3. Store weights in `routing_parameters` table to allow adjustments without code
-changes.
+Production Reality Box:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PRODUCTION REALITY: Reporting Can Be Renewable Work                         │
+│                                                                             │
+│ One automation project reduced weekly manual reporting from 150 minutes to  │
+│ 20 minutes. Over a year this returned more than 100 hours of senior time.   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+
+3.5 INTELLIGENCE QUERY LIBRARY
+
+Purpose
+
+Turn ad hoc analysis into a shared library of trusted queries so teams stop
+reinventing the same SQL with slightly different filters.
+
+3.5.1 Structure the Library
+
+Table:
 ```sql
-CREATE TABLE routing_parameters (
+CREATE TABLE analytics_sql_library (
   id SERIAL PRIMARY KEY,
-  provider_name TEXT UNIQUE NOT NULL,
-  cost_weight NUMERIC DEFAULT 0.4,
-  speed_weight NUMERIC DEFAULT 0.3,
-  success_weight NUMERIC DEFAULT 0.3,
-  updated_at TIMESTAMP DEFAULT NOW()
+  name TEXT UNIQUE NOT NULL,
+  description TEXT NOT NULL,
+  sql_text TEXT NOT NULL,
+  owner_email TEXT NOT NULL,
+  tags TEXT[],
+  created_at TIMESTAMP DEFAULT NOW(),
+  last_reviewed_at TIMESTAMP DEFAULT NOW()
 );
 ```
-4. Make.com scenario:
-   • Fetch last 50 fulfillment events per provider.
-   • Calculate rolling averages.
-   • Update provider score variable.
-   • Router chooses provider with lowest score for next order.
 
-Validation:
-  □ Routing decision logged per order (score snapshot stored)
-  □ Failover still respected when provider unavailable
+Tags can include:
+  • finance, operations, marketing
+  • provider, product, performance, reliability
 
-Step 3: Add Guardrails (Time: 45 minutes)
-1. Minimum success threshold: provider must have success rate >90 percent over
-last 24 hours to remain eligible.
-2. Cost ceilings: never select provider >15 percent above baseline unless others
-unavailable.
-3. Manual override flag per provider for maintenance.
+3.5.2 Core Queries
 
-Production Reality Box:
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ PRODUCTION REALITY: Savings Add Up                                          │
-│                                                                             │
-│ Routing optimization typically saves $0.42 to $0.68 per order at 1,000      │
-│ orders per month, equating to $5,000 to $8,000 annual gross margin.         │
-└─────────────────────────────────────────────────────────────────────────────┘
+Examples:
 
-3.3 Testing Procedures
-1. Simulate provider slowdown by increasing response_time_ms for Printful in
-test data, verify router shifts traffic to Printify.
-2. Force manual override and confirm router obeys.
-3. Compare monthly cost vs baseline static routing, expect ≥5 percent reduction.
-
-═══════════════════════════════════════════════════════════════════════════════
-
-3.4 AUTOMATED REPORTING SYSTEMS
-
-Goal: Deliver executive-ready updates without spreadsheets or late-night
-PowerPoint sessions.
-
-Implementation Steps
-
-Step 1: Define Report Cadence and Audience (Time: 30 minutes)
-1. Weekly operations review: Ops lead, Support, Engineering.
-2. Monthly executive review: Founder, Finance, Marketing.
-3. Quarterly board summary (if applicable).
-Document goals for each: operational health, cost trends, roadmap check.
-
-Step 2: Build Report Templates (Time: 60 minutes)
-1. Use Notion, Coda, or Google Docs template with sections:
-   • Snapshot metrics (orders, revenue, margin, success rate)
-   • Highlights and lowlights
-   • Incidents and resolutions
-   • Cost and savings analysis
-   • Upcoming priorities
-2. Embed live charts via Metabase public links or images generated by API.
-
-Step 3: Automate Population (Time: 90 minutes)
-1. Create Make.com scenario triggered every Monday 07:00:
-   • Query analytics views for key metrics.
-   • Fill template via Notion or Docs API.
-   • Post link to Discord #leadership channel.
-2. For monthly reports, include narrative bullet autopopulated with template like:
-```
-{{if (orders_growth_percent > 5, "Growth accelerated", "Growth steady")}}
-```
-3. Append manual commentary where nuance required.
-
-Validation:
-  □ Automation runs for 4 consecutive cycles without manual edits
-  □ Stakeholders confirm report accuracy within ±1 percent of source data
-
-Production Reality Box:
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ TIME SAVED                                                                  │
-│ Weekly manual reporting previously consumed 2.5 hours. Automation reduces   │
-│ prep to 15 minutes for narrative review, returning 100+ hours annually.     │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-3.4 Testing Procedures
-1. Run scenario with test data, inspect generated document.
-2. Validate permissions: only intended recipients can view.
-3. Insert deliberate data discrepancy to ensure reviewer catches it during QA.
-
-═══════════════════════════════════════════════════════════════════════════════
-
-3.5 BUSINESS INTELLIGENCE QUERIES
-
-Purpose: Provide reusable SQL for analysts and cross functional partners.
-
-Query Library (examples):
-
-Query 1: Contribution Margin by Product
+Contribution margin by product:
 ```sql
 SELECT
   product_id,
   SUM(total_cents) AS revenue_cents,
   SUM(cost_cents) AS fulfillment_cost_cents,
   SUM(total_cents - cost_cents) AS gross_margin_cents,
-  ROUND(SUM(total_cents - cost_cents)::NUMERIC / NULLIF(SUM(total_cents),0),4) 
-    AS gross_margin_percent
+  ROUND(
+    SUM(total_cents - cost_cents)::NUMERIC
+    / NULLIF(SUM(total_cents), 0),
+    4
+  ) AS gross_margin_percent
 FROM orders
 GROUP BY product_id
 ORDER BY gross_margin_percent DESC;
 ```
-Usage: Determine which catalog items deserve promotion or retirement.
 
-Query 2: Provider SLA Compliance
+Provider reliability:
 ```sql
 SELECT
   provider_name,
-  COUNT(*) FILTER (WHERE status='success')::DECIMAL / COUNT(*) AS success_rate,
-  AVG(response_time_ms) AS avg_response_ms,
-  PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY response_time_ms) AS p95_ms
+  COUNT(*) FILTER (WHERE status = 'success')::DECIMAL
+    / COUNT(*) AS success_rate,
+  AVG(response_time_ms) AS average_response_ms
 FROM fulfillment_events
 WHERE created_at >= NOW() - INTERVAL '30 days'
 GROUP BY provider_name;
 ```
-Usage: Feed Section 3.3 routing decisions and SLA discussions.
 
-Query 3: Error Hotspots
+Error hotspots:
 ```sql
 SELECT
   error_code,
   COUNT(*) AS occurrences,
-  AVG(time_to_resolution_minutes) AS avg_resolution_minutes,
-  SUM(financial_impact_cents) AS impact_cents
+  AVG(time_to_resolution_minutes) AS average_resolution_minutes
 FROM error_events
 WHERE created_at >= NOW() - INTERVAL '14 days'
 GROUP BY error_code
 ORDER BY occurrences DESC
 LIMIT 10;
 ```
-Usage: Prioritize engineering work by actual impact.
 
-Operationalizing the Library
-1. Store queries in `analytics_sql_library` table with tags and owner.
-2. Surface in documentation portal with copy button.
-3. Require peer review before adding new query to prevent performance issues.
+3.5.3 Governance
 
-Validation:
-  □ All queries execute under 5 seconds on 100k+ order dataset
-  □ Owners respond to change requests within 48 hours
+Rules:
+  • No query enters library without review from another engineer
+  • Every query has an owner and review date
+  • Queries with poor performance must be optimized or removed
+
+Testing:
+1. Run each library query on staging and production read replica.
+2. Ensure all queries complete within a few seconds on expected data volumes.
+3. Validate results against manual calculations when first introduced.
 
 Production Reality Box:
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ PRODUCTION REALITY: SQL ROT                                                  │
+│ PRODUCTION REALITY: Unreviewed Queries Cause Incidents                      │
 │                                                                             │
-│ Without ownership, queries diverge and produce different answers. Tie each  │
-│ SQL asset to an owner and review quarterly to keep trust high.              │
+│ An unbounded query against a large orders table can overwhelm your database │
+│ at peak time. Review processes and performance expectations protect both    │
+│ systems and teams.                                                          │
 └─────────────────────────────────────────────────────────────────────────────┘
-
-3.5 Testing Procedures
-1. Run each query on staging and production (read replica) to confirm parity.
-2. Capture execution plans; ensure indexes exist for heavy joins.
-3. Validate results with stakeholders for one reporting cycle.
 
 ═══════════════════════════════════════════════════════════════════════════════
 
-3.6 TREND ANALYSIS AND FORECASTING
+3.6 TREND AND CAPACITY MODELS
 
-Objective: Anticipate demand, staffing needs, and infrastructure scaling before
-they become fire drills.
+Why this matters
 
-Implementation Steps
+Intelligence is incomplete until it can tell you what might happen next month,
+not only what happened last week.
 
-Step 1: Build Baseline Time Series (Time: 60 minutes)
-1. Create `analytics.daily_summary` materialized view if not already.
-2. Include orders, gross revenue, margin, provider usage, error counts.
-3. Use SQL window functions to compute rolling averages and seasonality.
+3.6.1 Build Time Series Views
 
-Step 2: Apply Forecasting Models (Time: 120 minutes)
-1. Choose approach:
-   • Simple exponential smoothing for <12 months data.
-   • Prophet or ARIMA via Python notebook for longer history.
-2. Data pipeline:
-   • Make.com scheduled job exports CSV to storage.
-   • Python script (Cloud Run, AWS Lambda, or local) runs forecast weekly.
-   • Results written back to `analytics_forecasts` table.
-```sql
-CREATE TABLE analytics_forecasts (
-  id SERIAL PRIMARY KEY,
-  metric_name TEXT NOT NULL,
-  forecast_date DATE NOT NULL,
-  projected_value NUMERIC NOT NULL,
-  lower_bound NUMERIC,
-  upper_bound NUMERIC,
-  model_version TEXT,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-```
+Extend analytics.daily_orders into analytics.daily_summary, including:
+  • Orders
+  • Gross revenue and gross margin
+  • Provider mix
+  • Error counts
 
-Step 3: Connect Forecasts to Planning (Time: 45 minutes)
-1. Create dashboard overlay showing actual vs forecast.
-2. Define trigger thresholds:
-   • If projected orders exceed current capacity by 20 percent, initiate scaling
-     plan (Section 7).
-   • If projected cost creeps above target margin by 5 percent, revisit routing
-     weights.
-3. Link to hiring plans: when forecast indicates >1,200 orders per month for
-three consecutive months, hire part time operations support.
+Add rolling averages and standard deviation columns using window functions so
+spikes stand out clearly.
 
-Validation:
-  □ Forecast mean absolute percentage error (MAPE) under 7 percent
-  □ Planning triggers documented with owners
+3.6.2 Forecast Demand
+
+Approaches:
+  • For short history use simple growth factors with moving averages
+  • For longer history export to a notebook that uses Prophet or ARIMA
+
+Workflow:
+  • Scheduled job exports daily_summary to storage
+  • Notebook or cloud function runs forecast weekly
+  • Results are written back to analytics_forecasts table
+
+3.6.3 Connect Forecasts to Decisions
+
+Examples:
+  • If forecasted orders exceed current system capacity threshold by 20 percent, schedule work from Part 7 scaling section
+  • If forecasted margin falls below target for two consecutive months, revisit routing weights and provider contracts
+  • If forecasted error volume climbs, plan reliability work in Part 6
+
+Testing:
+1. Back test models against previous quarter outcome.
+2. Measure forecast error and adjust models or assumptions.
+3. Review at least monthly with leadership and record decisions made.
 
 Production Reality Box:
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ PRODUCTION REALITY: Forecasts Need Guardrails                               │
+│ PRODUCTION REALITY: Capacity Surprises Are Expensive                        │
 │                                                                             │
-│ Models drift. Review accuracy monthly, retrain quarterly, and log model     │
-│ version in analytics_forecasts to correlate surprises with model changes.   │
+│ Many teams only scale once systems are already overloaded. Even simple      │
+│ rolling forecasts can provide weeks of advance warning, which converts      │
+│ emergency work into planned projects.                                       │
 └─────────────────────────────────────────────────────────────────────────────┘
-
-3.6 Testing Procedures
-1. Back-test forecasts using last quarter actuals to evaluate accuracy.
-2. Simulate spike scenario (double orders) and ensure alerts escalate.
-3. Review planning decisions triggered in prior month during ops meeting.
 
 ═══════════════════════════════════════════════════════════════════════════════
 
 SECTION 3 COMPLETION MILESTONE
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🎯 MILESTONE ACHIEVED: Intelligence Layer Operational                       │
+│ 🎯 MILESTONE ACHIEVED: Intelligence Layer Online                            │
 │                                                                             │
 │ Capabilities gained:                                                        │
-│   ✓ Live dashboards covering performance, cost, and errors                  │
-│   ✓ Routing engine making data driven provider choices                      │
-│   ✓ Automated reporting keeping leadership informed                         │
-│   ✓ Forecasts guiding staffing and capacity plans                           │
+│   ✓ Analytics warehouse with trusted metrics                                │
+│   ✓ Performance dashboards and SLOs with tested alerts                      │
+│   ✓ Cost aware routing that protects margin                                 │
+│   ✓ Automated reporting that keeps stakeholders aligned                     │
+│   ✓ Query library that reduces duplicated work                              │
+│   ✓ Forecasts that inform scaling and hiring decisions                      │
 │                                                                             │
-│ Business impact (after 90 days of operation):                               │
-│   • 5 to 9 percent reduction in per-order fulfillment cost                  │
-│   • 32 percent faster detection of provider incidents                        │
-│   • 4 hours per week saved on manual reporting                              │
-│   • Predictable hiring and inventory planning                               │
+│ Business impact after three months:                                         │
+│   • Five to twelve percent reduction in average fulfillment cost            │
+│   • Thirty percent faster incident detection and response                   │
+│   • More than one hundred hours saved per year on manual reporting          │
+│   • Clear evidence for when to scale infrastructure and team                │
 │                                                                             │
 │ Confidence checklist before moving on:                                      │
-│   □ Dashboards show live data with <10 minute lag                           │
-│   □ Alerts have been tested end to end                                      │
-│   □ Routing weights documented with rollback plan                           │
-│   □ Forecast accuracy reviewed with leadership                              │
+│   □ Dashboards populated and trusted across the team                        │
+│   □ Alerts tested from injection through runbook execution                  │
+│   □ Routing weights and guardrails documented with rollback plan            │
+│   □ Reports generated automatically for several cycles                      │
+│   □ Forecast accuracy reviewed and model choices documented                 │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-Next: Part 4 dives into the underlying data infrastructure, retention policies,
-and SQL automation that keep this intelligence layer resilient as volume grows.
-
-═══════════════════════════════════════════════════════════════════════════════
-
-PARTS 4-7: ENHANCED SUMMARIES (TO BE EXPANDED NEXT)
-
-The remaining parts still contain the enhanced summaries from the previous
-edition. Use the same blueprint applied to Part 3 to author complete sections
-covering:
-  • Part 4: Data lifecycle, retention, backup, and SQL automation
-  • Part 5: Customer experience automation with templates and decision trees
-  • Part 6: Monitoring stack, incident response, daily operations
-  • Part 7: Scaling levers, performance tuning, cost control, team playbooks
-
-Refer to MASTER_INTEGRATION_SPECIFICATION.md Section 2 for detailed word counts,
-metrics, and deliverables required per part.
+Next: Part 4 turns to the underlying data and analytics infrastructure that
+keeps this intelligence layer healthy as volumes increase and the business
+introduces new products and providers.
 
 ═══════════════════════════════════════════════════════════════════════════════
 
